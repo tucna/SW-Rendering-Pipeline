@@ -196,6 +196,17 @@ public:
     {
       for (int id = 0; id < mesh.Indices.size(); id += 3)
       {
+        // BFC
+        float4 vv1 = m_viewMatrix * m_translationMatrix * float4({ mesh.Vertices[mesh.Indices[id + 0]].Position.X, mesh.Vertices[mesh.Indices[id + 0]].Position.Y, mesh.Vertices[mesh.Indices[id + 0]].Position.Z, 1.0f });
+        float4 vv2 = m_viewMatrix * m_translationMatrix * float4({ mesh.Vertices[mesh.Indices[id + 1]].Position.X, mesh.Vertices[mesh.Indices[id + 1]].Position.Y, mesh.Vertices[mesh.Indices[id + 1]].Position.Z, 1.0f });
+        float4 vv3 = m_viewMatrix * m_translationMatrix * float4({ mesh.Vertices[mesh.Indices[id + 2]].Position.X, mesh.Vertices[mesh.Indices[id + 2]].Position.Y, mesh.Vertices[mesh.Indices[id + 2]].Position.Z, 1.0f });
+
+        float3 normal = cross(float3({ vv2.x, vv2.y, vv2.z }) - float3({ vv1.x, vv1.y, vv1.z }), float3({ vv3.x, vv3.y, vv3.z }) - float3({ vv1.x, vv1.y, vv1.z }));
+        float dotP = dot(normal, float3({vv1.x, vv1.y, vv1.z}));
+
+        if (dotP > 0.0f)
+          continue;
+
         float4 v1 = m_mvpMatrix * float4({mesh.Vertices[mesh.Indices[id + 0]].Position.X, mesh.Vertices[mesh.Indices[id + 0]].Position.Y, mesh.Vertices[mesh.Indices[id + 0]].Position.Z, 1.0f});
         float4 v2 = m_mvpMatrix * float4({mesh.Vertices[mesh.Indices[id + 1]].Position.X, mesh.Vertices[mesh.Indices[id + 1]].Position.Y, mesh.Vertices[mesh.Indices[id + 1]].Position.Z, 1.0f});
         float4 v3 = m_mvpMatrix * float4({mesh.Vertices[mesh.Indices[id + 2]].Position.X, mesh.Vertices[mesh.Indices[id + 2]].Position.Y, mesh.Vertices[mesh.Indices[id + 2]].Position.Z, 1.0f});

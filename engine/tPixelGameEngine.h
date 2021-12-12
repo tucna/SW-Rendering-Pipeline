@@ -2128,6 +2128,7 @@ namespace tDX
       swapChainDesc.SampleDesc.Quality = 0;
       swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
       swapChainDesc.BufferCount = backBufferCount;
+      //swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD; TUCNA
 
       DXGI_SWAP_CHAIN_FULLSCREEN_DESC fsSwapChainDesc = {};
       fsSwapChainDesc.Windowed = TRUE;
