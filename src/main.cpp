@@ -114,8 +114,8 @@ public:
     sAppName = "Light";
     loader.LoadFile("res/cornell_box.obj");
 
-    float3 maxCoords = {-100,-100,-100};
-    float3 minCoords = {100,100,100};
+    float3 maxCoords = {-1000,-1000,-1000};
+    float3 minCoords = {1000,1000,1000};
 
     for (const auto& vertex : loader.LoadedVertices)
     {
@@ -123,9 +123,9 @@ public:
       maxCoords.y = max(maxCoords.y, vertex.Position.Y);
       maxCoords.z = max(maxCoords.z, vertex.Position.Z);
 
-      minCoords.x = min(maxCoords.x, vertex.Position.X);
-      minCoords.y = min(maxCoords.y, vertex.Position.Y);
-      minCoords.z = min(maxCoords.z, vertex.Position.Z);
+      minCoords.x = min(minCoords.x, vertex.Position.X);
+      minCoords.y = min(minCoords.y, vertex.Position.Y);
+      minCoords.z = min(minCoords.z, vertex.Position.Z);
     }
 
     m_cubeTranslationX = -(minCoords.x + maxCoords.x) / 2.0f;
@@ -209,14 +209,14 @@ public:
         float2 screenV3 = {v3.x / v3.w, v3.y / v3.w};
 
         // Viewport
-        screenV1.x = (screenV1.x + 1.0f) * (800 - 1) * 0.5f;
-        screenV1.y = (1.0f - screenV1.y) * (600 - 1) * 0.5f;
+        screenV1.x = (screenV1.x + 1.0f) * 800.0f * 0.5f;
+        screenV1.y = (1.0f - screenV1.y) * 600.0f * 0.5f;
 
-        screenV2.x = (screenV2.x + 1.0f) * (800 - 1) * 0.5f;
-        screenV2.y = (1.0f - screenV2.y) * (600 - 1) * 0.5f;
+        screenV2.x = (screenV2.x + 1.0f) * 800.0f * 0.5f;
+        screenV2.y = (1.0f - screenV2.y) * 600.0f * 0.5f;
 
-        screenV3.x = (screenV3.x + 1.0f) * (800 - 1) * 0.5f;
-        screenV3.y = (1.0f - screenV3.y) * (600 - 1) * 0.5f;
+        screenV3.x = (screenV3.x + 1.0f) * 800.0f * 0.5f;
+        screenV3.y = (1.0f - screenV3.y) * 600.0f * 0.5f;
 
         tDX::vi2d v1s = {(int)screenV1.x, (int)screenV1.y};
         tDX::vi2d v2s = {(int)screenV2.x, (int)screenV2.y};
