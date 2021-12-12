@@ -143,12 +143,14 @@ public:
     Clear(tDX::BLACK);
 
     // Keyboard control
-    const float coeficient = 20.0f * fElapsedTime;
+    const float coeficient = 10.0f * fElapsedTime;
 
     if (GetKey(tDX::D).bHeld) { m_cubeTranslationX += coeficient; }
     if (GetKey(tDX::A).bHeld) { m_cubeTranslationX -= coeficient; }
     if (GetKey(tDX::W).bHeld) { m_cubeTranslationZ -= coeficient; }
     if (GetKey(tDX::S).bHeld) { m_cubeTranslationZ += coeficient; }
+    if (GetKey(tDX::E).bHeld) { m_yaw += coeficient * 30; }
+    if (GetKey(tDX::Q).bHeld) { m_yaw -= coeficient * 30; }
 
     // World matrix
     m_translationMatrix =
@@ -159,7 +161,15 @@ public:
       {{ 0, 0, 0, 1                  }},
     }};
 
-    m_modelMatrix = m_translationMatrix;
+    m_rotationMatrix =
+    { {
+      {{ cos(toRad(m_yaw))     , 0, -sin(toRad(m_yaw)), 0 }},
+      {{ 0                     , 1, 0                      , 0 }},
+      {{ sin(toRad(m_yaw)), 0, cos(toRad(m_yaw)) , 0 }},
+      {{ 0                     , 0, 0                      , 1 }},
+    } };
+
+    m_modelMatrix = m_translationMatrix * m_rotationMatrix;
 
     // View matrix
     float3 zaxis = normalize(m_target - m_eye);
@@ -197,12 +207,10 @@ public:
       for (int id = 0; id < mesh.Indices.size(); id += 3)
       {
         // BFC
-        float4 vv1 = m_viewMatrix * m_translationMatrix * float4({ mesh.Vertices[mesh.Indices[id + 0]].Position.X, mesh.Vertices[mesh.Indices[id + 0]].Position.Y, mesh.Vertices[mesh.Indices[id + 0]].Position.Z, 1.0f });
-        float4 vv2 = m_viewMatrix * m_translationMatrix * float4({ mesh.Vertices[mesh.Indices[id + 1]].Position.X, mesh.Vertices[mesh.Indices[id + 1]].Position.Y, mesh.Vertices[mesh.Indices[id + 1]].Position.Z, 1.0f });
-        float4 vv3 = m_viewMatrix * m_translationMatrix * float4({ mesh.Vertices[mesh.Indices[id + 2]].Position.X, mesh.Vertices[mesh.Indices[id + 2]].Position.Y, mesh.Vertices[mesh.Indices[id + 2]].Position.Z, 1.0f });
+        float4 vv1 = m_viewMatrix * m_modelMatrix * float4({ mesh.Vertices[mesh.Indices[id + 0]].Position.X, mesh.Vertices[mesh.Indices[id + 0]].Position.Y, mesh.Vertices[mesh.Indices[id + 0]].Position.Z, 1.0f });
+        float4 vn1 = m_viewMatrix * m_modelMatrix * float4({ mesh.Vertices[mesh.Indices[id + 0]].Normal.X, mesh.Vertices[mesh.Indices[id + 0]].Normal.Y, mesh.Vertices[mesh.Indices[id + 0]].Normal.Z, 0.0f });
 
-        float3 normal = cross(float3({ vv2.x, vv2.y, vv2.z }) - float3({ vv1.x, vv1.y, vv1.z }), float3({ vv3.x, vv3.y, vv3.z }) - float3({ vv1.x, vv1.y, vv1.z }));
-        float dotP = dot(normal, float3({vv1.x, vv1.y, vv1.z}));
+        float dotP = dot(normalize({vn1.x, vn1.y, vn1.z}), normalize({vv1.x, vv1.y, vv1.z}));
 
         if (dotP > 0.0f)
           continue;
@@ -254,7 +262,10 @@ private:
   float m_cubeTranslationY = 0.0f;
   float m_cubeTranslationZ = 0.0f;
 
+  float m_yaw = 0;
+
   float4x4 m_translationMatrix;
+  float4x4 m_rotationMatrix;
 
   float4x4 m_modelMatrix;
   float4x4 m_viewMatrix;
