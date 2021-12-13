@@ -1136,8 +1136,14 @@ namespace tDX
         if (!OnUserUpdate(fElapsedTime))
           bActive = false;
 
-        // TODO: UpdateSubresource is not optimal here, Map would be better
-        m_d3dContext->UpdateSubresource(m_texture.Get(), 0, NULL, pDefaultDrawTarget->GetData(), pDefaultDrawTarget->width * 4, 0);
+        // Update texture to be rendered
+        D3D11_MAPPED_SUBRESOURCE mappedTexture;
+        m_d3dContext->Map(m_texture.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedTexture);
+        memcpy(mappedTexture.pData, pDefaultDrawTarget->GetData(), pDefaultDrawTarget->width * pDefaultDrawTarget->height * 4);
+        m_d3dContext->Unmap(m_texture.Get(), 0);
+
+        // Bind RT
+        m_d3dContext->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), NULL);
 
         m_d3dContext->DrawIndexed(6, 0, 0);
         m_swapChain->Present(0, 0);
@@ -2128,7 +2134,7 @@ namespace tDX
       swapChainDesc.SampleDesc.Quality = 0;
       swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
       swapChainDesc.BufferCount = backBufferCount;
-      //swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD; TUCNA
+      swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 
       DXGI_SWAP_CHAIN_FULLSCREEN_DESC fsSwapChainDesc = {};
       fsSwapChainDesc.Windowed = TRUE;
@@ -2152,7 +2158,6 @@ namespace tDX
 
     // Create a view interface on the rendertarget to use on bind.
     m_d3dDevice->CreateRenderTargetView(backBuffer.Get(), nullptr, m_renderTargetView.ReleaseAndGetAddressOf());
-    m_d3dContext->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), NULL);
 
     // Texture setup
     int32_t fWidth = pDefaultDrawTarget->width;
@@ -2167,7 +2172,7 @@ namespace tDX
     textureDescription.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
     textureDescription.SampleDesc.Count = 1;
     textureDescription.SampleDesc.Quality = 0;
-    textureDescription.Usage = D3D11_USAGE_DEFAULT; //D3D11_USAGE_DYNAMIC;
+    textureDescription.Usage = D3D11_USAGE_DYNAMIC;
     textureDescription.BindFlags = D3D11_BIND_SHADER_RESOURCE;
     textureDescription.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
     textureDescription.MiscFlags = 0;
