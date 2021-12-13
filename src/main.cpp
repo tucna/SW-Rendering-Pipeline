@@ -2,6 +2,7 @@
 #include "../engine/tPixelGameEngine.h"
 
 #include <array>
+#include <vector>
 
 #include "OBJ_Loader.h"
 
@@ -109,7 +110,8 @@ float2 operator+(const float2& v1, const float2& v2) { return { v1.x + v2.x, v1.
 class Light : public tDX::PixelGameEngine
 {
 public:
-  Light()
+  Light() :
+    m_zBuffer(800 * 600, -100)
   {
     sAppName = "Light";
     loader.LoadFile("res/cornell_box.obj");
@@ -145,12 +147,10 @@ public:
     // Keyboard control
     const float coeficient = 10.0f * fElapsedTime;
 
-    if (GetKey(tDX::D).bHeld) { m_cubeTranslationX += coeficient; }
-    if (GetKey(tDX::A).bHeld) { m_cubeTranslationX -= coeficient; }
-    if (GetKey(tDX::W).bHeld) { m_cubeTranslationZ -= coeficient; }
-    if (GetKey(tDX::S).bHeld) { m_cubeTranslationZ += coeficient; }
-    if (GetKey(tDX::E).bHeld) { m_yaw += coeficient * 30; }
-    if (GetKey(tDX::Q).bHeld) { m_yaw -= coeficient * 30; }
+    if (GetKey(tDX::W).bHeld) { m_eye.z -= coeficient; }
+    if (GetKey(tDX::S).bHeld) { m_eye.z += coeficient; }
+    if (GetKey(tDX::E).bHeld) { m_yaw += coeficient * 15; }
+    if (GetKey(tDX::Q).bHeld) { m_yaw -= coeficient * 15; }
 
     // World matrix
     m_translationMatrix =
@@ -164,12 +164,12 @@ public:
     m_rotationMatrix =
     { {
       {{ cos(toRad(m_yaw))     , 0, -sin(toRad(m_yaw)), 0 }},
-      {{ 0                     , 1, 0                      , 0 }},
-      {{ sin(toRad(m_yaw)), 0, cos(toRad(m_yaw)) , 0 }},
-      {{ 0                     , 0, 0                      , 1 }},
+      {{ 0                     , 1, 0                 , 0 }},
+      {{ sin(toRad(m_yaw))     , 0, cos(toRad(m_yaw)) , 0 }},
+      {{ 0                     , 0, 0                 , 1 }},
     } };
 
-    m_modelMatrix = m_translationMatrix * m_rotationMatrix;
+    m_modelMatrix = m_rotationMatrix * m_translationMatrix;
 
     // View matrix
     float3 zaxis = normalize(m_target - m_eye);
@@ -241,7 +241,13 @@ public:
         tDX::vi2d v2s = {(int)screenV2.x, (int)screenV2.y};
         tDX::vi2d v3s = {(int)screenV3.x, (int)screenV3.y};
 
-        DrawTriangle(v1s, v2s, v3s);
+        //DrawTriangle(v1s, v2s, v3s);
+
+        uint8_t r = uint8_t(min(mesh.MeshMaterial.Kd.X * abs(dotP) + 0.1f/*+ mesh.MeshMaterial.Ka.X*/, 1.0f) * 255);
+        uint8_t g = uint8_t(min(mesh.MeshMaterial.Kd.Y * abs(dotP) + 0.1f/*+ mesh.MeshMaterial.Ka.Y*/, 1.0f) * 255);
+        uint8_t b = uint8_t(min(mesh.MeshMaterial.Kd.Z * abs(dotP) + 0.1f/*+ mesh.MeshMaterial.Ka.Z*/, 1.0f) * 255);
+
+        FillTriangle(v1s, v2s, v3s, {r,g,b});
       }
     }
 
@@ -263,6 +269,9 @@ private:
   float m_cubeTranslationZ = 0.0f;
 
   float m_yaw = 0;
+
+  //std::array<std::array<float, 600>, 800> m_zBuffer;
+  std::vector<float> m_zBuffer;
 
   float4x4 m_translationMatrix;
   float4x4 m_rotationMatrix;
