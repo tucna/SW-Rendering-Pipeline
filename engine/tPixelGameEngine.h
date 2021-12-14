@@ -185,6 +185,50 @@ namespace tDX // tucna - DirectX
 
   //=============================================================
 
+  template <class T>
+  struct v3d_generic
+  {
+    T x = 0;
+    T y = 0;
+    T z = 0;
+
+    inline v3d_generic() : x(0), y(0), z(0) {                                                      }
+    inline v3d_generic(T _x, T _y, T _z) : x(_x), y(_y), z(_z) {                                                      }
+    inline v3d_generic(const v3d_generic& v) : x(v.x), y(v.y), z(v.z) {                                                      }
+    /* TODO
+    inline T mag() { return sqrt(x * x + y * y + z * z); }
+    inline T mag2() { return x * x + y * y + z * z; }
+    inline v4d_generic  norm() { T r = 1 / mag(); return v4d_generic(x*r, y*r, z*r, w); }
+    inline v4d_generic  perp() { return v2d_generic(-y, x); }
+    */
+    inline T dot(const v3d_generic& rhs) { return this->x * rhs.x + this->y * rhs.y + this->z * rhs.z; }
+    //inline T cross(const v4d_generic& rhs) { return this->x * rhs.y - this->y * rhs.x; }
+    inline v3d_generic  operator +  (const v3d_generic& rhs) const { return v3d_generic(this->x + rhs.x, this->y + rhs.y, this->z + rhs.z); }
+    inline v3d_generic  operator -  (const v3d_generic& rhs) const { return v3d_generic(this->x - rhs.x, this->y - rhs.y, this->z - rhs.z); }
+    inline v3d_generic  operator *  (const T& rhs)           const { return v3d_generic(this->x * rhs, this->y * rhs, this->z * rhs); }
+    inline v3d_generic  operator /  (const T& rhs)           const { return v3d_generic(this->x / rhs, this->y / rhs, this->z / rhs); }
+    inline v3d_generic& operator += (const v3d_generic& rhs) { this->x += rhs.x; this->y += rhs.y; this->z += rhs.z; return *this; }
+    inline v3d_generic& operator -= (const v3d_generic& rhs) { this->x -= rhs.x; this->y -= rhs.y; this->z -= rhs.z; return *this; }
+    inline v3d_generic& operator *= (const T& rhs) { this->x *= rhs; this->y *= rhs; this->z *= rhs; return *this; }
+    inline v3d_generic& operator /= (const T& rhs) { this->x /= rhs; this->y /= rhs; this->z /= rhs; return *this; }
+    inline T& operator [] (std::size_t i) { return *((T*)this + i);	   /* <-- D'oh :( */ }
+    inline operator v3d_generic<int>() const { return { static_cast<int32_t>(this->x), static_cast<int32_t>(this->y), static_cast<int32_t>(this->z) }; }
+    inline operator v3d_generic<float>() const { return { static_cast<float>(this->x), static_cast<float>(this->y), static_cast<float>(this->z) }; }
+  };
+
+  template<class T> inline v3d_generic<T> operator * (const float& lhs, const v3d_generic<T>& rhs)  { return v3d_generic<T>(lhs * rhs.x, lhs * rhs.y, lhs * rhs.z); }
+  template<class T> inline v3d_generic<T> operator * (const double& lhs, const v3d_generic<T>& rhs) { return v3d_generic<T>(lhs * rhs.x, lhs * rhs.y, lhs * rhs.z); }
+  template<class T> inline v3d_generic<T> operator * (const int& lhs, const v3d_generic<T>& rhs)    { return v3d_generic<T>(lhs * rhs.x, lhs * rhs.y, lhs * rhs.z); }
+  template<class T> inline v3d_generic<T> operator / (const float& lhs, const v3d_generic<T>& rhs)  { return v3d_generic<T>(lhs / rhs.x, lhs / rhs.y, lhs / rhs.z); }
+  template<class T> inline v3d_generic<T> operator / (const double& lhs, const v3d_generic<T>& rhs) { return v3d_generic<T>(lhs / rhs.x, lhs / rhs.y, lhs / rhs.z); }
+  template<class T> inline v3d_generic<T> operator / (const int& lhs, const v3d_generic<T>& rhs)    { return v3d_generic<T>(lhs / rhs.x, lhs / rhs.y, lhs / rhs.z); }
+
+  typedef v3d_generic<int32_t> vi3d;
+  typedef v3d_generic<float> vf3d;
+  typedef v3d_generic<double> vd3d;
+
+  //=============================================================
+
   struct HWButton
   {
     bool bPressed = false;	// Set once during the frame the event occurs
@@ -362,7 +406,7 @@ namespace tDX // tucna - DirectX
     // Flat fills a triangle between points (x1,y1), (x2,y2) and (x3,y3)
     void FillTriangle(int32_t x1, int32_t y1, int32_t x2, int32_t y2, int32_t x3, int32_t y3, Pixel p = tDX::WHITE);
     void FillTriangle(const tDX::vi2d& pos1, const tDX::vi2d& pos2, const tDX::vi2d& pos3, Pixel p = tDX::WHITE);
-    void FillTriangleTUCNA(const tDX::vi2d& pos1, const tDX::vi2d& pos2, const tDX::vi2d& pos3, Pixel p = tDX::WHITE);
+    void FillTriangleTUCNA(const tDX::vf3d& pos1, const tDX::vf3d& pos2, const tDX::vf3d& pos3, Pixel p = tDX::WHITE);
     // Draws an entire sprite at location (x,y)
     void DrawSprite(int32_t x, int32_t y, Sprite *sprite, uint32_t scale = 1);
     void DrawSprite(const tDX::vi2d& pos, Sprite *sprite, uint32_t scale = 1);
@@ -377,6 +421,8 @@ namespace tDX // tucna - DirectX
     void Clear(Pixel p);
     // Resize the primary screen sprite
     void SetScreenSize(int w, int h);
+    // TUCNA
+    void ClearZBuffer();
 
   public: // Branding
     std::string sAppName;
@@ -927,8 +973,8 @@ namespace tDX
     pDefaultDrawTarget = new Sprite(nScreenWidth, nScreenHeight);
     // TODO: zBuffer maybe should not be created always but on demand
     zBuffer = new float[nScreenWidth * nScreenHeight];
-    for (size_t i = 0; i < nScreenWidth * nScreenHeight; i++)
-      zBuffer[i] = -1000.0f;
+
+    ClearZBuffer();
 
     SetDrawTarget(nullptr);
     return tDX::OK;
@@ -944,6 +990,12 @@ namespace tDX
     SetDrawTarget(nullptr);
 
     tDX_UpdateViewport();
+  }
+
+  void PixelGameEngine::ClearZBuffer()
+  {
+    for (size_t i = 0; i < nScreenWidth * nScreenHeight; i++)
+      zBuffer[i] = -1000.0f;
   }
 
   tDX::rcode PixelGameEngine::Start()
@@ -1138,6 +1190,9 @@ namespace tDX
 #ifdef T_DBG_OVERDRAW
         tDX::Sprite::nOverdrawCount = 0;
 #endif
+
+        // Clear z-buffer before drawing
+        ClearZBuffer();
 
         // Handle Frame Update
         if (!OnUserUpdate(fElapsedTime))
@@ -1617,31 +1672,32 @@ namespace tDX
     FillTriangle(pos1.x, pos1.y, pos2.x, pos2.y, pos3.x, pos3.y, p);
   }
 
-  void PixelGameEngine::FillTriangleTUCNA(const tDX::vi2d& pos1, const tDX::vi2d& pos2, const tDX::vi2d& pos3, Pixel p)
+  void PixelGameEngine::FillTriangleTUCNA(const tDX::vf3d& pos1, const tDX::vf3d& pos2, const tDX::vf3d& pos3, Pixel p)
   {
-    auto cross = [](const tDX::vi2d& v1, const tDX::vi2d& v2) { return v1.x * v2.y - v1.y * v2.x; };
-
-    /* get the bounding box of the triangle */
+    // get the bounding box of the triangle
     int maxX = std::max(pos1.x, std::max(pos2.x, pos3.x));
     int minX = std::min(pos1.x, std::min(pos2.x, pos3.x));
     int maxY = std::max(pos1.y, std::max(pos2.y, pos3.y));
     int minY = std::min(pos1.y, std::min(pos2.y, pos3.y));
 
-    /* spanning vectors of edge (v1,v2) and (v1,v3) */
-    tDX::vi2d vs1 = {pos2.x - pos1.x, pos2.y - pos1.y};
-    tDX::vi2d vs2 = {pos3.x - pos1.x, pos3.y - pos1.y};
-
     for (int x = minX; x <= maxX; x++)
     {
       for (int y = minY; y <= maxY; y++)
       {
-        tDX::vi2d q = {x - pos1.x, y - pos1.y};
+        float Wv1 = ((pos2.y - pos3.y) * (x - pos3.x) + (pos3.x - pos2.x) * (y - pos3.y)) / ((pos2.y - pos3.y) * (pos1.x - pos3.x) + (pos3.x - pos2.x) * (pos1.y - pos3.y));
+        float Wv2 = ((pos3.y - pos1.y) * (x - pos3.x) + (pos1.x - pos3.x) * (y - pos3.y)) / ((pos2.y - pos3.y) * (pos1.x - pos3.x) + (pos3.x - pos2.x) * (pos1.y - pos3.y));
+        float Wv3 = 1.0f - Wv1 - Wv2;
 
-        float s = (float)cross(q, vs2) / cross(vs1, vs2);
-        float t = (float)cross(vs1, q) / cross(vs1, vs2);
+        if (Wv1 < 0 || Wv2 < 0 || Wv3 < 0)
+          continue;
 
-        if ((s >= 0) && (t >= 0) && (s + t <= 1)) // inside triangle
+        float z = Wv1 * pos1.z + Wv2 * pos2.z + Wv3 * pos3.z;
+
+        if (z > zBuffer[y * nScreenWidth + x])
+        {
+          zBuffer[y * nScreenWidth + x] = z;
           Draw(x, y, p);
+        }
       }
     }
   }

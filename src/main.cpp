@@ -237,11 +237,9 @@ public:
         screenV3.x = (screenV3.x + 1.0f) * 800.0f * 0.5f;
         screenV3.y = (1.0f - screenV3.y) * 600.0f * 0.5f;
 
-        tDX::vi2d v1s = {(int)screenV1.x, (int)screenV1.y};
-        tDX::vi2d v2s = {(int)screenV2.x, (int)screenV2.y};
-        tDX::vi2d v3s = {(int)screenV3.x, (int)screenV3.y};
-
-        //DrawTriangle(v1s, v2s, v3s);
+        tDX::vf3d v1s = {screenV1.x, screenV1.y, 1.0f / v1.w };
+        tDX::vf3d v2s = {screenV2.x, screenV2.y, 1.0f / v2.w };
+        tDX::vf3d v3s = {screenV3.x, screenV3.y, 1.0f / v3.w };
 
         uint8_t r = uint8_t(min(mesh.MeshMaterial.Kd.X * abs(dotP) + 0.1f/*+ mesh.MeshMaterial.Ka.X*/, 1.0f) * 255);
         uint8_t g = uint8_t(min(mesh.MeshMaterial.Kd.Y * abs(dotP) + 0.1f/*+ mesh.MeshMaterial.Ka.Y*/, 1.0f) * 255);
