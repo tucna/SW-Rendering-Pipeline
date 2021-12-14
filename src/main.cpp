@@ -114,7 +114,7 @@ public:
     m_zBuffer(800 * 600, -100)
   {
     sAppName = "Light";
-    loader.LoadFile("res/cornell_box.obj");
+    loader.LoadFile("res/bunny.obj");
 
     float3 maxCoords = {-1000,-1000,-1000};
     float3 minCoords = {1000,1000,1000};
