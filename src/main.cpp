@@ -247,7 +247,8 @@ public:
         uint8_t g = uint8_t(min(mesh.MeshMaterial.Kd.Y * abs(dotP) + 0.1f/*+ mesh.MeshMaterial.Ka.Y*/, 1.0f) * 255);
         uint8_t b = uint8_t(min(mesh.MeshMaterial.Kd.Z * abs(dotP) + 0.1f/*+ mesh.MeshMaterial.Ka.Z*/, 1.0f) * 255);
 
-        FillTriangle(v1s, v2s, v3s, {r,g,b});
+        //FillTriangle(v1s, v2s, v3s, {r,g,b});
+        FillTriangleTUCNA(v1s, v2s, v3s, { r,g,b });
       }
     }
 

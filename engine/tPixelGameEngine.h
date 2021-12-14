@@ -362,6 +362,7 @@ namespace tDX // tucna - DirectX
     // Flat fills a triangle between points (x1,y1), (x2,y2) and (x3,y3)
     void FillTriangle(int32_t x1, int32_t y1, int32_t x2, int32_t y2, int32_t x3, int32_t y3, Pixel p = tDX::WHITE);
     void FillTriangle(const tDX::vi2d& pos1, const tDX::vi2d& pos2, const tDX::vi2d& pos3, Pixel p = tDX::WHITE);
+    void FillTriangleTUCNA(const tDX::vi2d& pos1, const tDX::vi2d& pos2, const tDX::vi2d& pos3, Pixel p = tDX::WHITE);
     // Draws an entire sprite at location (x,y)
     void DrawSprite(int32_t x, int32_t y, Sprite *sprite, uint32_t scale = 1);
     void DrawSprite(const tDX::vi2d& pos, Sprite *sprite, uint32_t scale = 1);
@@ -389,6 +390,7 @@ namespace tDX // tucna - DirectX
 
     Sprite		*pDefaultDrawTarget = nullptr;
     Sprite		*pDrawTarget = nullptr;
+    float*    zBuffer = nullptr;
     Pixel::Mode	nPixelMode = Pixel::Mode::NORMAL;
     float		fBlendFactor = 1.0f;
     uint32_t	nScreenWidth = 256;
@@ -923,6 +925,11 @@ namespace tDX
 
     // Create a sprite that represents the primary drawing target
     pDefaultDrawTarget = new Sprite(nScreenWidth, nScreenHeight);
+    // TODO: zBuffer maybe should not be created always but on demand
+    zBuffer = new float[nScreenWidth * nScreenHeight];
+    for (size_t i = 0; i < nScreenWidth * nScreenHeight; i++)
+      zBuffer[i] = -1000.0f;
+
     SetDrawTarget(nullptr);
     return tDX::OK;
   }
@@ -1608,6 +1615,35 @@ namespace tDX
   void PixelGameEngine::FillTriangle(const tDX::vi2d& pos1, const tDX::vi2d& pos2, const tDX::vi2d& pos3, Pixel p)
   {
     FillTriangle(pos1.x, pos1.y, pos2.x, pos2.y, pos3.x, pos3.y, p);
+  }
+
+  void PixelGameEngine::FillTriangleTUCNA(const tDX::vi2d& pos1, const tDX::vi2d& pos2, const tDX::vi2d& pos3, Pixel p)
+  {
+    auto cross = [](const tDX::vi2d& v1, const tDX::vi2d& v2) { return v1.x * v2.y - v1.y * v2.x; };
+
+    /* get the bounding box of the triangle */
+    int maxX = std::max(pos1.x, std::max(pos2.x, pos3.x));
+    int minX = std::min(pos1.x, std::min(pos2.x, pos3.x));
+    int maxY = std::max(pos1.y, std::max(pos2.y, pos3.y));
+    int minY = std::min(pos1.y, std::min(pos2.y, pos3.y));
+
+    /* spanning vectors of edge (v1,v2) and (v1,v3) */
+    tDX::vi2d vs1 = {pos2.x - pos1.x, pos2.y - pos1.y};
+    tDX::vi2d vs2 = {pos3.x - pos1.x, pos3.y - pos1.y};
+
+    for (int x = minX; x <= maxX; x++)
+    {
+      for (int y = minY; y <= maxY; y++)
+      {
+        tDX::vi2d q = {x - pos1.x, y - pos1.y};
+
+        float s = (float)cross(q, vs2) / cross(vs1, vs2);
+        float t = (float)cross(vs1, q) / cross(vs1, vs2);
+
+        if ((s >= 0) && (t >= 0) && (s + t <= 1)) // inside triangle
+          Draw(x, y, p);
+      }
+    }
   }
 
   // https://www.avrfreaks.net/sites/default/files/triangles.c
