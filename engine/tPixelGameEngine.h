@@ -1680,6 +1680,11 @@ namespace tDX
     int maxY = std::max(pos1.y, std::max(pos2.y, pos3.y));
     int minY = std::min(pos1.y, std::min(pos2.y, pos3.y));
 
+    maxX = std::clamp(maxX, 0, (int)nScreenWidth - 1);
+    minX = std::clamp(minX, 0, (int)nScreenWidth - 1);
+    maxY = std::clamp(maxY, 0, (int)nScreenHeight - 1);
+    minY = std::clamp(minY, 0, (int)nScreenHeight - 1);
+
     for (int x = minX; x <= maxX; x++)
     {
       for (int y = minY; y <= maxY; y++)

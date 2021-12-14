@@ -162,7 +162,7 @@ namespace objl
 		// Ambient Color
 		Vector3 Ka;
 		// Diffuse Color
-		Vector3 Kd;
+    Vector3 Kd = {0.8f, 0.8f, 0.8f};
 		// Specular Color
 		Vector3 Ks;
 		// Specular Exponent

@@ -145,8 +145,9 @@ public:
     Clear(tDX::BLACK);
 
     // Keyboard control
-    const float coeficient = 10.0f * fElapsedTime;
+    float coeficient = 10.0f * fElapsedTime;
 
+    if (GetKey(tDX::SHIFT).bHeld) { coeficient *= 8; }
     if (GetKey(tDX::W).bHeld) { m_eye.z -= coeficient; }
     if (GetKey(tDX::S).bHeld) { m_eye.z += coeficient; }
     if (GetKey(tDX::E).bHeld) { m_yaw += coeficient * 15; }
@@ -195,9 +196,9 @@ public:
     m_projectionMatrix =
     { {
       {{ 1.0f / (m_aspectRatio*tan_fovY), 0              , 0           , 0                        }},
-      {{ 0                            , 1.0f / tan_fovY, 0           , 0                          }},
-      {{ 0                            , 0              , -(f + n) / (f - n), -(2 * f*n) / (f - n) }},
-      {{ 0                            , 0              , -1          , 0                          }}
+      {{ 0                              , 1.0f / tan_fovY, 0           , 0                          }},
+      {{ 0                              , 0              , -(f + n) / (f - n), -(2 * f*n) / (f - n) }},
+      {{ 0                              , 0              , -1          , 0                          }}
     } };
 
     m_mvpMatrix = m_projectionMatrix * m_viewMatrix * m_modelMatrix;
@@ -218,11 +219,11 @@ public:
         float4 v1 = m_mvpMatrix * float4({mesh.Vertices[mesh.Indices[id + 0]].Position.X, mesh.Vertices[mesh.Indices[id + 0]].Position.Y, mesh.Vertices[mesh.Indices[id + 0]].Position.Z, 1.0f});
         float4 v2 = m_mvpMatrix * float4({mesh.Vertices[mesh.Indices[id + 1]].Position.X, mesh.Vertices[mesh.Indices[id + 1]].Position.Y, mesh.Vertices[mesh.Indices[id + 1]].Position.Z, 1.0f});
         float4 v3 = m_mvpMatrix * float4({mesh.Vertices[mesh.Indices[id + 2]].Position.X, mesh.Vertices[mesh.Indices[id + 2]].Position.Y, mesh.Vertices[mesh.Indices[id + 2]].Position.Z, 1.0f});
-
+        /*
         v1.w = v1.w == 0.0f ? 1.0f : v1.w;
         v2.w = v2.w == 0.0f ? 1.0f : v2.w;
         v3.w = v3.w == 0.0f ? 1.0f : v3.w;
-
+        */
         float2 screenV1 = {v1.x / v1.w, v1.y / v1.w};
         float2 screenV2 = {v2.x / v2.w, v2.y / v2.w};
         float2 screenV3 = {v3.x / v3.w, v3.y / v3.w};
