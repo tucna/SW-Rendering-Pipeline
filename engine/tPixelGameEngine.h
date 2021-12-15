@@ -537,11 +537,11 @@ namespace tDX // tucna - DirectX
   the definitions being duplicated.
 
   If all else fails, create a file called "olcPixelGameEngine.cpp" with the following
-  two lines. Then you can just #include "olcPixelGameEngine.h" as normal without worrying
+  two lines. Then you can just #include "tPixelGameEngine.h" as normal without worrying
   about defining things. Dont forget to include that cpp file as part of your build!
 
   #define T_PGE_APPLICATION
-  #include "olcPixelGameEngine.h"
+  #include "tPixelGameEngine.h"
 */
 
 #ifdef T_PGE_APPLICATION
@@ -995,7 +995,7 @@ namespace tDX
   void PixelGameEngine::ClearZBuffer()
   {
     for (size_t i = 0; i < nScreenWidth * nScreenHeight; i++)
-      zBuffer[i] = -1000.0f;
+      zBuffer[i] = std::numeric_limits<float>::min();
   }
 
   tDX::rcode PixelGameEngine::Start()
@@ -1675,22 +1675,24 @@ namespace tDX
   void PixelGameEngine::FillTriangleTUCNA(const tDX::vf3d& pos1, const tDX::vf3d& pos2, const tDX::vf3d& pos3, Pixel p)
   {
     // get the bounding box of the triangle
-    int maxX = std::max(pos1.x, std::max(pos2.x, pos3.x));
-    int minX = std::min(pos1.x, std::min(pos2.x, pos3.x));
-    int maxY = std::max(pos1.y, std::max(pos2.y, pos3.y));
-    int minY = std::min(pos1.y, std::min(pos2.y, pos3.y));
+    int maxX = lround(std::max(pos1.x, std::max(pos2.x, pos3.x)));
+    int minX = lround(std::min(pos1.x, std::min(pos2.x, pos3.x)));
+    int maxY = lround(std::max(pos1.y, std::max(pos2.y, pos3.y)));
+    int minY = lround(std::min(pos1.y, std::min(pos2.y, pos3.y)));
 
     maxX = std::clamp(maxX, 0, (int)nScreenWidth - 1);
     minX = std::clamp(minX, 0, (int)nScreenWidth - 1);
     maxY = std::clamp(maxY, 0, (int)nScreenHeight - 1);
     minY = std::clamp(minY, 0, (int)nScreenHeight - 1);
 
+    float det = 1.0f / ((pos2.y - pos3.y) * (pos1.x - pos3.x) + (pos3.x - pos2.x) * (pos1.y - pos3.y));
+
     for (int x = minX; x <= maxX; x++)
     {
       for (int y = minY; y <= maxY; y++)
       {
-        float Wv1 = ((pos2.y - pos3.y) * (x - pos3.x) + (pos3.x - pos2.x) * (y - pos3.y)) / ((pos2.y - pos3.y) * (pos1.x - pos3.x) + (pos3.x - pos2.x) * (pos1.y - pos3.y));
-        float Wv2 = ((pos3.y - pos1.y) * (x - pos3.x) + (pos1.x - pos3.x) * (y - pos3.y)) / ((pos2.y - pos3.y) * (pos1.x - pos3.x) + (pos3.x - pos2.x) * (pos1.y - pos3.y));
+        float Wv1 = ((pos2.y - pos3.y) * (x - pos3.x) + (pos3.x - pos2.x) * (y - pos3.y)) * det ;
+        float Wv2 = ((pos3.y - pos1.y) * (x - pos3.x) + (pos1.x - pos3.x) * (y - pos3.y)) * det;
         float Wv3 = 1.0f - Wv1 - Wv2;
 
         if (Wv1 < 0 || Wv2 < 0 || Wv3 < 0)
