@@ -1,5 +1,5 @@
-#include "Scene.h"
 #include "OBJ_Loader.h"
+#include "Scene.h"
 
 using namespace std;
 using namespace math;
@@ -8,6 +8,32 @@ Scene::Scene(const std::string& pathToModel)
 {
   m_loader = make_unique<objl::Loader>();
   m_loader->LoadFile(pathToModel);
+
+  m_pipeline = make_unique<Pipeline>();
+
+  m_sortedVerticesByMaterial.resize(m_loader->LoadedMaterials.size());
+  m_sortedIndicesByMaterial.resize(m_loader->LoadedMaterials.size());
+
+  for (auto& mesh : m_loader->LoadedMeshes)
+  {
+    for (size_t materialID = 0; materialID < m_loader->LoadedMaterials.size(); materialID++)
+    {
+      if (mesh.MeshMaterial.name == m_loader->LoadedMaterials[materialID].name)
+      {
+        for (auto& v : mesh.Vertices)
+        {
+          Vertex vertex;
+          vertex.position = {v.Position.X, v.Position.Y, v.Position.Z};
+          vertex.normal = { v.Normal.X, v.Normal.Y, v.Normal.Z };
+
+          m_sortedVerticesByMaterial[materialID].push_back(vertex);
+        }
+
+        for (auto& i : mesh.Indices)
+          m_sortedIndicesByMaterial[materialID].push_back(i);
+      }
+    }
+  }
 
   PlaceModelToCenter();
 }
@@ -26,12 +52,21 @@ void Scene::RotateModel(float3 rotation)
   m_rotation += rotation;
 }
 
-vector<triangle> Scene::GenerateTrianglesToDraw()
+void Scene::Draw()
 {
-  ComposeMatrices();
+  // Set pipeline
+  m_pipeline->SetIAInput(m_sortedVerticesByMaterial[1], m_sortedIndicesByMaterial[1]);
+  m_pipeline->SetRSDescriptor(800, 600);
 
-  vector<triangle> triangles;
+  m_pipeline->Draw();
+}
 
+vector<Triangle> Scene::GenerateTrianglesToDraw()
+{
+  //ComposeMatrices();
+
+  vector<Triangle> triangles;
+  /*
   for (const auto& mesh : m_loader->LoadedMeshes)
   {
     for (int id = 0; id < mesh.Indices.size(); id += 3)
@@ -69,14 +104,16 @@ vector<triangle> Scene::GenerateTrianglesToDraw()
       float3 v1s = { screenV1.x, screenV1.y, 1.0f / v1.w };
       float3 v2s = { screenV2.x, screenV2.y, 1.0f / v2.w };
       float3 v3s = { screenV3.x, screenV3.y, 1.0f / v3.w };
+      */
 
-      uint8_t r = uint8_t(min(mesh.MeshMaterial.Kd.X * abs(dotP) + 0.1f/*+ mesh.MeshMaterial.Ka.X*/, 1.0f) * 255);
-      uint8_t g = uint8_t(min(mesh.MeshMaterial.Kd.Y * abs(dotP) + 0.1f/*+ mesh.MeshMaterial.Ka.Y*/, 1.0f) * 255);
-      uint8_t b = uint8_t(min(mesh.MeshMaterial.Kd.Z * abs(dotP) + 0.1f/*+ mesh.MeshMaterial.Ka.Z*/, 1.0f) * 255);
-
+      //uint8_t r = uint8_t(min(mesh.MeshMaterial.Kd.X * abs(dotP) + 0.1f/*+ mesh.MeshMaterial.Ka.X*/, 1.0f) * 255);
+      //uint8_t g = uint8_t(min(mesh.MeshMaterial.Kd.Y * abs(dotP) + 0.1f/*+ mesh.MeshMaterial.Ka.Y*/, 1.0f) * 255);
+      //uint8_t b = uint8_t(min(mesh.MeshMaterial.Kd.Z * abs(dotP) + 0.1f/*+ mesh.MeshMaterial.Ka.Z*/, 1.0f) * 255);
+  /*
       triangles.push_back({v1s, v2s, v3s, r, g, b});
     }
   }
+  */
 
   return triangles;
 }

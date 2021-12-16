@@ -6,14 +6,26 @@ constexpr float PI = 3.14159265358979323846f;
 
 using float4x4 = std::array<std::array<float, 4>, 4>;
 
-struct float4 { float x, y, z, w; };
-struct float3 { float x, y, z; };
 struct float2 { float x, y; };
-
-struct triangle
+struct float3 { float x, y, z; };
+struct float4
 {
-  float3 v1, v2, v3;
-  uint8_t r, g, b;
+  float4() { x = 0; y = 0; z = 0; w = 0; }
+  float4(float _x, float _y, float _z, float _w) { x = _x; y = _y; z = _z; w = _w; }
+  float4(float3 xyz, float _w) { x = xyz.x; y = xyz.y; z = xyz.z; w = _w; }
+
+  float x, y, z, w;
+};
+
+struct Vertex
+{
+  float3 position;
+  float3 normal;
+};
+
+struct Triangle
+{
+  Vertex v1, v2, v3;
 };
 
 // TODO: methods are inlined because I want to include them in headers

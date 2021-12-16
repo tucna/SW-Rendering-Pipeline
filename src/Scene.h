@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "Math.h"
+#include "Pipeline.h"
 
 namespace objl
 {
@@ -20,7 +21,9 @@ public:
   void MoveCamera(float3 translation);
   void RotateModel(float3 rotation);
 
-  std::vector<triangle> GenerateTrianglesToDraw();
+  void Draw();
+
+  std::vector<Triangle> GenerateTrianglesToDraw();
 
 private:
   constexpr static float m_aspectRatio = 800.0f / 600.0f; // TODO
@@ -43,4 +46,8 @@ private:
   float3 m_eye = { 0, 0, 0 };
   float3 m_target = { 0, 0, -1 };
   float3 m_up = { 0, 1, 0 };
+
+  std::unique_ptr<Pipeline> m_pipeline;
+  std::vector<std::vector<Vertex>> m_sortedVerticesByMaterial;
+  std::vector< std::vector<uint32_t>> m_sortedIndicesByMaterial;
 };
