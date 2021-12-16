@@ -12,14 +12,21 @@ namespace objl
   class Loader;
 }
 
+namespace tDX
+{
+  class PixelGameEngine;
+}
+
 class Scene
 {
 public:
-  Scene(const std::string& pathToModel);
+  Scene(const std::string& pathToModel, tDX::PixelGameEngine* engine);
   ~Scene();
 
   void MoveCamera(float3 translation);
   void RotateModel(float3 rotation);
+
+  void ComposeMatrices();
 
   void Draw();
 
@@ -29,7 +36,6 @@ private:
   constexpr static float m_aspectRatio = 800.0f / 600.0f; // TODO
 
   void PlaceModelToCenter();
-  void ComposeMatrices();
 
   std::unique_ptr<objl::Loader> m_loader;
 
@@ -50,4 +56,9 @@ private:
   std::unique_ptr<Pipeline> m_pipeline;
   std::vector<std::vector<Vertex>> m_sortedVerticesByMaterial;
   std::vector< std::vector<uint32_t>> m_sortedIndicesByMaterial;
+
+  float* m_depthBuffer = nullptr;
+
+  // TODO bad smell!
+  tDX::PixelGameEngine* m_engine;
 };

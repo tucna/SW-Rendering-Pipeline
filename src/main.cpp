@@ -13,10 +13,11 @@ using namespace math;
 class Light : public tDX::PixelGameEngine
 {
 public:
-  Light()
+  Light() :
+    renderTarget(800,600)
   {
     sAppName = "Light";
-    m_scene = make_unique<Scene>("res/cornell_box.obj");
+    m_scene = make_unique<Scene>("res/cornell_box.obj", this);
   }
 
   bool OnUserCreate() override
@@ -37,26 +38,21 @@ public:
     if (GetKey(tDX::E).bHeld) { m_scene->RotateModel({ 0, coeficient * 15, 0 }); }
     if (GetKey(tDX::Q).bHeld) { m_scene->RotateModel({ 0, -coeficient * 15, 0 }); }
 
+    // TUCNA delete
+    //renderTarget.SetPixel(10,10, tDX::WHITE);
+    //SetDrawTarget(&renderTarget);
+    // ---------
+
+    m_scene->ComposeMatrices();
     m_scene->Draw();
-    /*
-    const vector<Triangle>& triangles = m_scene->GenerateTrianglesToDraw();
 
-    for (const auto& t : triangles)
-    {
-      // TODO
-      tDX::vf3d v1 = { t.v1.position.x, t.v1.position.y, t.v1.position.z };
-      tDX::vf3d v2 = { t.v2.position.x, t.v2.position.y, t.v2.position.z };
-      tDX::vf3d v3 = { t.v3.position.x, t.v3.position.y, t.v3.position.z };
-      tDX::Pixel c = { (uint8_t)lround(t.v1.color.x * 255), (uint8_t)lround(t.v1.color.y * 255), (uint8_t)lround(t.v1.color.z * 255), 255 };
-
-      FillTriangleTUCNA(v1, v2, v3, c);
-    }
-    */
     return true;
   }
 
 private:
   unique_ptr<Scene> m_scene;
+
+  tDX::Sprite renderTarget; // TUCNA should not be there
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)

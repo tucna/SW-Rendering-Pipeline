@@ -1,15 +1,22 @@
 #include "OBJ_Loader.h"
 #include "Scene.h"
 
+#include "../engine/tPixelGameEngine.h"
+
 using namespace std;
 using namespace math;
 
-Scene::Scene(const std::string& pathToModel)
+Scene::Scene(const std::string& pathToModel, tDX::PixelGameEngine* engine)
 {
+  m_engine = engine;
+
   m_loader = make_unique<objl::Loader>();
   m_loader->LoadFile(pathToModel);
 
-  m_pipeline = make_unique<Pipeline>();
+  // TODO
+  m_depthBuffer = new float[800 * 600];
+
+  m_pipeline = make_unique<Pipeline>(m_engine);
 
   m_sortedVerticesByMaterial.resize(m_loader->LoadedMaterials.size());
   m_sortedIndicesByMaterial.resize(m_loader->LoadedMaterials.size());
@@ -55,10 +62,19 @@ void Scene::RotateModel(float3 rotation)
 void Scene::Draw()
 {
   // Set pipeline
-  m_pipeline->SetIAInput(m_sortedVerticesByMaterial[1], m_sortedIndicesByMaterial[1]);
   m_pipeline->SetRSDescriptor(800, 600);
+  m_pipeline->SetOMBuffers(m_depthBuffer);
+  m_pipeline->SetVSBuffers(m_mvpMatrix);
 
-  m_pipeline->Draw();
+  m_pipeline->ClearDepthBuffer();
+
+  for (size_t materialID = 0; materialID < m_loader->LoadedMaterials.size(); materialID++)
+  {
+    m_pipeline->SetIAInput(m_sortedVerticesByMaterial[materialID], m_sortedIndicesByMaterial[materialID]);
+    m_pipeline->SetPSBuffers({ m_loader->LoadedMaterials[materialID].Kd.X, m_loader->LoadedMaterials[materialID].Kd.Y, m_loader->LoadedMaterials[materialID].Kd.Z });
+
+    m_pipeline->Draw();
+  }
 }
 
 vector<Triangle> Scene::GenerateTrianglesToDraw()
