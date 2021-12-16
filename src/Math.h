@@ -10,11 +10,15 @@ struct float2 { float x, y; };
 struct float3 { float x, y, z; };
 struct float4
 {
+  union
+  {
+    struct { float x, y, z, w; };
+    struct { float r, g, b, a; };
+  };
+
   float4() { x = 0; y = 0; z = 0; w = 0; }
   float4(float _x, float _y, float _z, float _w) { x = _x; y = _y; z = _z; w = _w; }
   float4(float3 xyz, float _w) { x = xyz.x; y = xyz.y; z = xyz.z; w = _w; }
-
-  float x, y, z, w;
 };
 
 struct Vertex
@@ -36,6 +40,7 @@ namespace math
   inline float toRad(float deg) { return deg * PI / 180.0f; }
   inline float dot(const float4& v1, const float4& v2) { return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z + v1.w * v2.w; }
   inline float dot(const float3& v1, const float3& v2) { return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z; }
+  inline float length(const float3& v1) { return sqrt(v1.x * v1.x + v1.y * v1.y + v1.z * v1.z); };
 
   inline float3 cross(const float3& v1, const float3& v2)
   {

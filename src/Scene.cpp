@@ -62,7 +62,7 @@ void Scene::RotateModel(float3 rotation)
 void Scene::Draw()
 {
   // Set pipeline
-  m_pipeline->SetRSDescriptor(800, 600);
+  m_pipeline->SetRSDescriptor(800, 600, Pipeline::Culling::CW);
   m_pipeline->SetOMBuffers(m_depthBuffer);
   m_pipeline->SetVSBuffers(m_mvpMatrix, m_viewMatrix, m_modelMatrix);
 
@@ -71,7 +71,10 @@ void Scene::Draw()
   for (size_t materialID = 0; materialID < m_loader->LoadedMaterials.size(); materialID++)
   {
     m_pipeline->SetIAInput(m_sortedVerticesByMaterial[materialID], m_sortedIndicesByMaterial[materialID]);
-    m_pipeline->SetPSBuffers({ m_loader->LoadedMaterials[materialID].Kd.X, m_loader->LoadedMaterials[materialID].Kd.Y, m_loader->LoadedMaterials[materialID].Kd.Z });
+    m_pipeline->SetPSBuffers(
+      { m_loader->LoadedMaterials[materialID].Kd.X, m_loader->LoadedMaterials[materialID].Kd.Y, m_loader->LoadedMaterials[materialID].Kd.Z },
+      { m_loader->LoadedMaterials[materialID].Ka.X, m_loader->LoadedMaterials[materialID].Ka.Y, m_loader->LoadedMaterials[materialID].Ka.Z }
+    );
 
     m_pipeline->Draw();
   }

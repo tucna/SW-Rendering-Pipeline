@@ -79,33 +79,14 @@ Pipeline::VSOutput Pipeline::VS(const Vertex& vertex)
   float4 n = m_viewMatrix * m_modelMatrix * float4(vertex.normal, 0.0f);
 
   float dotP = dot(normalize({ v.x, v.y, v.z }), normalize({ n.x, n.y, n.z }));
-  output.viewDot = dotP;
-  //output.viewDot = dotP > 0.0f ? 0.0f : abs(dotP); TUCNA TODO
+  output.viewDot = abs(dotP);
 
   return output;
-
-
-  /*
-  for (auto& triangle : m_triangles)
-  {
-    float4 transV1, transV2, transV3;
-
-    transV1 = m_mvpMatrix * float4(triangle.v1.position, 1.0f);
-    transV2 = m_mvpMatrix * float4(triangle.v2.position, 1.0f);
-    transV3 = m_mvpMatrix * float4(triangle.v3.position, 1.0f);
-
-    float3 v1s = { screenV1.x, screenV1.y, 1.0f / v1.w };
-    float3 v2s = { screenV2.x, screenV2.y, 1.0f / v2.w };
-    float3 v3s = { screenV3.x, screenV3.y, 1.0f / v3.w };
-
-    m_transposedTriangles.push_back({transV1, transV2, transV3});
-  }
-  */
 }
 
 void Pipeline::PostVS(VSOutput& vsoutput)
 {
-  // Transform to NDC - TODO check
+  // Transform to NDC
   float invW = 1.0f / vsoutput.position.w;
 
   vsoutput.position.x *= invW;
@@ -136,18 +117,7 @@ void Pipeline::PA()
 
 void Pipeline::RS(VSOutputTriangle& triangle)
 {
-  // Cull - TODO should not depend on VS output
-  if (triangle.v1.viewDot > 0)
-    return;
-
-  triangle.v1.viewDot = abs(triangle.v1.viewDot);
-  triangle.v2.viewDot = abs(triangle.v2.viewDot);
-  triangle.v3.viewDot = abs(triangle.v3.viewDot);
-  //--------------
-
-
   // TODO lambda?
-
 
   // To screen space
   triangle.v1.position.x = (triangle.v1.position.x + 1.0f) * m_viewportWidth * 0.5f;
@@ -162,6 +132,12 @@ void Pipeline::RS(VSOutputTriangle& triangle)
   float3 v1 = { triangle.v1.position.x, triangle.v1.position.y, triangle.v1.position.z };
   float3 v2 = { triangle.v2.position.x, triangle.v2.position.y, triangle.v2.position.z };
   float3 v3 = { triangle.v3.position.x, triangle.v3.position.y, triangle.v3.position.z };
+
+  // Culling
+  float area = (v1.x * (v2.y - v3.y) + v2.x * (v3.y - v1.y) + v3.x * (v1.y - v2.y)) / 2.0f;
+
+  if ((m_culling == Culling::CW && area > 0.0f) || (m_culling == Culling::CCW && area < 0.0f))
+    return;
 
   // get the bounding box of the triangle
   int maxX = lround(std::max(v1.x, std::max(v2.x, v3.x)));
@@ -209,6 +185,11 @@ void Pipeline::RS(VSOutputTriangle& triangle)
 
 float4 Pipeline::PS(VSOutput& psinput)
 {
-  float4 color = { psinput.viewDot * m_Kd.x, psinput.viewDot * m_Kd.y, psinput.viewDot * m_Kd.z, 1 };
+  float4 color = { psinput.viewDot * m_Kd.x + m_Ka.x, psinput.viewDot * m_Kd.y + m_Ka.y, psinput.viewDot * m_Kd.z + m_Ka.z, 1.0f };
+
+  color.r = min(color.r, 1.0f);
+  color.g = min(color.g, 1.0f);
+  color.b = min(color.b, 1.0f);
+
   return color;
 }
