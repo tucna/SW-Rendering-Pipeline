@@ -18,14 +18,16 @@ Scene::Scene(const std::string& pathToModel, tDX::PixelGameEngine* engine)
 
   m_pipeline = make_unique<Pipeline>(m_engine);
 
-  m_sortedVerticesByMaterial.resize(m_loader->LoadedMaterials.size());
-  m_sortedIndicesByMaterial.resize(m_loader->LoadedMaterials.size());
+  size_t bufferSize = m_loader->LoadedMaterials.size() == 0 ? 1 : m_loader->LoadedMaterials.size();
+
+  m_sortedVerticesByMaterial.resize(bufferSize);
+  m_sortedIndicesByMaterial.resize(bufferSize);
 
   for (auto& mesh : m_loader->LoadedMeshes)
   {
-    for (size_t materialID = 0; materialID < m_loader->LoadedMaterials.size(); materialID++)
+    for (size_t materialID = 0; materialID < bufferSize; materialID++)
     {
-      if (mesh.MeshMaterial.name == m_loader->LoadedMaterials[materialID].name)
+      if (bufferSize == 1 || (mesh.MeshMaterial.name == m_loader->LoadedMaterials[materialID].name))
       {
         for (auto& v : mesh.Vertices)
         {
@@ -68,13 +70,26 @@ void Scene::Draw()
 
   m_pipeline->ClearDepthBuffer();
 
-  for (size_t materialID = 0; materialID < m_loader->LoadedMaterials.size(); materialID++)
+  size_t bufferSize = m_loader->LoadedMaterials.size() == 0 ? 1 : m_loader->LoadedMaterials.size();
+
+  for (size_t materialID = 0; materialID < bufferSize; materialID++)
   {
     m_pipeline->SetIAInput(m_sortedVerticesByMaterial[materialID], m_sortedIndicesByMaterial[materialID]);
-    m_pipeline->SetPSBuffers(
-      { m_loader->LoadedMaterials[materialID].Kd.X, m_loader->LoadedMaterials[materialID].Kd.Y, m_loader->LoadedMaterials[materialID].Kd.Z },
-      { m_loader->LoadedMaterials[materialID].Ka.X, m_loader->LoadedMaterials[materialID].Ka.Y, m_loader->LoadedMaterials[materialID].Ka.Z }
-    );
+
+    if (bufferSize > 1)
+    {
+      m_pipeline->SetPSBuffers(
+        { m_loader->LoadedMaterials[materialID].Kd.X, m_loader->LoadedMaterials[materialID].Kd.Y, m_loader->LoadedMaterials[materialID].Kd.Z },
+        { m_loader->LoadedMaterials[materialID].Ka.X, m_loader->LoadedMaterials[materialID].Ka.Y, m_loader->LoadedMaterials[materialID].Ka.Z }
+      );
+    }
+    else
+    {
+      m_pipeline->SetPSBuffers(
+        { 0.8f, 0.8f, 0.8f },
+        { 0.1f, 0.1f, 0.1f }
+      );
+    }
 
     m_pipeline->Draw();
   }

@@ -18,6 +18,7 @@ public:
   {
     sAppName = "Light";
     m_scene = make_unique<Scene>("res/cornell_box.obj", this);
+    //m_scene = make_unique<Scene>("res/nefertiti.obj", this);
   }
 
   bool OnUserCreate() override
