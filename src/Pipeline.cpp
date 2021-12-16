@@ -4,6 +4,7 @@
 #include "../engine/tPixelGameEngine.h"
 
 using namespace std;
+using namespace math;
 
 Pipeline::Pipeline(tDX::PixelGameEngine * engine) :
   m_engine(engine)
@@ -72,6 +73,13 @@ Pipeline::VSOutput Pipeline::VS(const Vertex& vertex)
   VSOutput output;
 
   output.position = m_mvpMatrix * float4(vertex.position, 1.0f);
+  output.normal = vertex.normal;
+
+  float4 v = m_viewMatrix * m_modelMatrix * float4(vertex.position, 1.0f);
+  float4 n = m_viewMatrix * m_modelMatrix * float4(vertex.normal, 0.0f);
+
+  float dotP = dot(normalize({ v.x, v.y, v.z }), normalize({ n.x, n.y, n.z }));
+  output.viewDot = dotP > 0.0f ? 0.0f : abs(dotP);
 
   return output;
 
@@ -110,12 +118,16 @@ void Pipeline::PA()
   {
     VSOutputTriangle triangle;
 
+    // TODO lambda?
     triangle.v1.position = m_VSOutputs[index + 0].position;
     triangle.v1.normal   = m_VSOutputs[index + 0].normal;
+    triangle.v1.viewDot  = m_VSOutputs[index + 0].viewDot;
     triangle.v2.position = m_VSOutputs[index + 1].position;
     triangle.v2.normal   = m_VSOutputs[index + 1].normal;
+    triangle.v2.viewDot  = m_VSOutputs[index + 1].viewDot;
     triangle.v3.position = m_VSOutputs[index + 2].position;
     triangle.v3.normal   = m_VSOutputs[index + 2].normal;
+    triangle.v3.viewDot  = m_VSOutputs[index + 2].viewDot;
 
     m_VSOutputTriangles.push_back(triangle);
   }
@@ -173,6 +185,7 @@ void Pipeline::RS(VSOutputTriangle& triangle)
         VSOutput vertex;
         vertex.position = { (float)x, (float)y, z, z }; // TODO second "z" is not correct - 1/z instead?
         vertex.normal = triangle.v1.normal; // TODO interpolate normals
+        vertex.viewDot = triangle.v1.viewDot;
 
         float4 color = PS(vertex);
 
@@ -180,10 +193,10 @@ void Pipeline::RS(VSOutputTriangle& triangle)
       }
     }
   }
-
 }
 
 float4 Pipeline::PS(VSOutput& psinput)
 {
-  return {m_Kd.x, m_Kd.y, m_Kd.z, 1};
+  float4 color = { psinput.viewDot * m_Kd.x, psinput.viewDot * m_Kd.y, psinput.viewDot * m_Kd.z, 1 };
+  return color;
 }

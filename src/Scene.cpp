@@ -64,7 +64,7 @@ void Scene::Draw()
   // Set pipeline
   m_pipeline->SetRSDescriptor(800, 600);
   m_pipeline->SetOMBuffers(m_depthBuffer);
-  m_pipeline->SetVSBuffers(m_mvpMatrix);
+  m_pipeline->SetVSBuffers(m_mvpMatrix, m_viewMatrix, m_modelMatrix);
 
   m_pipeline->ClearDepthBuffer();
 

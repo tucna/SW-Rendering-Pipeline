@@ -16,12 +16,9 @@ public:
   ~Pipeline();
 
   void SetIAInput(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices) { m_vertices = &vertices; m_indices = &indices; }
-  void SetVSBuffers(float4x4 mvpMatrix) { m_mvpMatrix = mvpMatrix; }
+  void SetVSBuffers(float4x4 mvpMatrix, float4x4 viewMatrix, float4x4 modelMatrix) { m_mvpMatrix = mvpMatrix; m_viewMatrix = viewMatrix; m_modelMatrix = modelMatrix; }
   void SetRSDescriptor(uint16_t viewportWidth, uint16_t viewportHeight) { m_viewportWidth = viewportWidth; m_viewportHeight = viewportHeight; }
-  void SetPSBuffers(float3 Kd)
-  { 
-    m_Kd = Kd;
-  }
+  void SetPSBuffers(float3 Kd) { m_Kd = Kd; }
   void SetOMBuffers(float* depthBuffer) { m_depthBuffer = depthBuffer; }
 
   void ClearDepthBuffer();
@@ -32,6 +29,7 @@ private:
   {
     float4 position;
     float3 normal;
+    float viewDot;
   };
 
   struct VSOutputTriangle
@@ -53,6 +51,8 @@ private:
 
   // VS
   float4x4 m_mvpMatrix;
+  float4x4 m_viewMatrix;
+  float4x4 m_modelMatrix;
   std::vector<VSOutput> m_VSOutputs;
 
   // PA
