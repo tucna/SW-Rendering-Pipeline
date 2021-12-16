@@ -79,7 +79,8 @@ Pipeline::VSOutput Pipeline::VS(const Vertex& vertex)
   float4 n = m_viewMatrix * m_modelMatrix * float4(vertex.normal, 0.0f);
 
   float dotP = dot(normalize({ v.x, v.y, v.z }), normalize({ n.x, n.y, n.z }));
-  output.viewDot = dotP > 0.0f ? 0.0f : abs(dotP);
+  output.viewDot = dotP;
+  //output.viewDot = dotP > 0.0f ? 0.0f : abs(dotP); TUCNA TODO
 
   return output;
 
@@ -135,7 +136,18 @@ void Pipeline::PA()
 
 void Pipeline::RS(VSOutputTriangle& triangle)
 {
+  // Cull - TODO should not depend on VS output
+  if (triangle.v1.viewDot > 0)
+    return;
+
+  triangle.v1.viewDot = abs(triangle.v1.viewDot);
+  triangle.v2.viewDot = abs(triangle.v2.viewDot);
+  triangle.v3.viewDot = abs(triangle.v3.viewDot);
+  //--------------
+
+
   // TODO lambda?
+
 
   // To screen space
   triangle.v1.position.x = (triangle.v1.position.x + 1.0f) * m_viewportWidth * 0.5f;
