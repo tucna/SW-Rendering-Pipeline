@@ -107,7 +107,8 @@ void Scene::Draw()
       m_pipeline->SetPSBuffers(
         { m_loader->LoadedMaterials[materialID].Kd.X, m_loader->LoadedMaterials[materialID].Kd.Y, m_loader->LoadedMaterials[materialID].Kd.Z },
         { m_loader->LoadedMaterials[materialID].Ka.X, m_loader->LoadedMaterials[materialID].Ka.Y, m_loader->LoadedMaterials[materialID].Ka.Z },
-        m_lightTranslation
+        m_lightTranslation,
+        m_eye
       );
     }
     else
@@ -115,6 +116,7 @@ void Scene::Draw()
       m_pipeline->SetPSBuffers(
         { 0.8f, 0.8f, 0.8f },
         { 0.1f, 0.1f, 0.1f },
+        { 0.0f, 0.0f, 0.0f },
         { 0.0f, 0.0f, 0.0f }
       );
     }

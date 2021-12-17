@@ -59,15 +59,20 @@ float4 Pipeline::PixelShader(VSOutput& psinput)
   float3 lightDir = normalize(m_lightPosition - psinput.worldPosition);
   float3 n = normalize(psinput.normal);
 
+  // Diffuse
   float diffuse = saturate(dot(n, lightDir));
 
   // Fall-off
   diffuse *= ((length(lightDir) * length(lightDir)) / dot(m_lightPosition - psinput.worldPosition, m_lightPosition - psinput.worldPosition));
 
+  // Specular
+  float3 h = normalize(normalize(m_cameraPosition - psinput.worldPosition) - lightDir);
+  float specular = pow(saturate(dot(h, n)), 2.0f);
+
   float4 color;
-  color.r = saturate(m_Ka.x + (m_Kd.x * diffuse));
-  color.g = saturate(m_Ka.y + (m_Kd.y * diffuse));
-  color.b = saturate(m_Ka.z + (m_Kd.z * diffuse));
+  color.r = saturate(m_Ka.x + (m_Kd.x * diffuse * 0.6f));// + (specular * 0.5f));
+  color.g = saturate(m_Ka.y + (m_Kd.y * diffuse * 0.6f));// + (specular * 0.5f));
+  color.b = saturate(m_Ka.z + (m_Kd.z * diffuse * 0.6f));// + (specular * 0.5f));
   color.a = 1.0f;
 
   return color;
