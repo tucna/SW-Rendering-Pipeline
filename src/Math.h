@@ -58,10 +58,9 @@ namespace math
 
 // Operators
 inline float3 operator-(const float3 &v1) { return { -v1.x, -v1.y, -v1.z }; }
-inline float3 operator-(const float3 &v1, const float3 &v2)
-{
-  return {v1.x - v2.x, v1.y - v2.y, v1.z - v2.z};
-}
+inline float3 operator-(const float3 &v1, const float3 &v2) { return {v1.x - v2.x, v1.y - v2.y, v1.z - v2.z}; }
+inline float3 operator+(const float3 &v1, const float3 &v2) { return { v1.x + v2.x, v1.y + v2.y, v1.z + v2.z }; }
+inline float3 operator*(float s1, const float3 &v1) { return { v1.x * s1, v1.y * s1, v1.z * s1 }; }
 
 inline float3& operator+=(float3& v1, const float3& v2)
 {

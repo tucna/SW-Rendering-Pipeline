@@ -44,15 +44,38 @@ Pipeline::VSOutput Pipeline::VertexShader(const Vertex& vertex)
   VSOutput output;
 
   output.position = m_mvpMatrix * float4(vertex.position, 1.0f);
-  output.normal = vertex.normal;
 
+  float4 n = m_modelMatrix * float4(vertex.normal, 0.0f);
+  output.normal = {n.x, n.y, n.z};
+
+  /*
+  // Flat shading
   float4 v = m_viewMatrix * m_modelMatrix * float4(vertex.position, 1.0f);
   float4 n = m_viewMatrix * m_modelMatrix * float4(vertex.normal, 0.0f);
 
   float dotP = dot(normalize({ v.x, v.y, v.z }), normalize({ n.x, n.y, n.z }));
   output.viewDot = abs(dotP);
+  */
+
+  output.viewDot = 0.0f;
 
   return output;
+}
+
+float4 Pipeline::PixelShader(VSOutput& psinput)
+{
+  /*
+  // Flat shading
+  float4 color = { psinput.viewDot * m_Kd.x + m_Ka.x, psinput.viewDot * m_Kd.y + m_Ka.y, psinput.viewDot * m_Kd.z + m_Ka.z, 1.0f };
+  */
+
+  float4 color = { (psinput.normal.x + 1.0f) * 0.5f, (psinput.normal.y) * 0.5f, (psinput.normal.z) * 0.5f, 1.0f };
+
+  color.r = min(color.r, 1.0f);
+  color.g = min(color.g, 1.0f);
+  color.b = min(color.b, 1.0f);
+
+  return color;
 }
 
 void Pipeline::PostVertexShader(VSOutput& vsoutput)
@@ -144,8 +167,9 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
         m_depthBuffer[y * m_buffersWidth + x] = z;
 
         VSOutput vertex;
-        vertex.position = { (float)x, (float)y, 1.0f/z, z }; // TODO second "z" is not correct - 1/z instead?
-        vertex.normal = triangle.v1.normal; // TODO interpolate normals
+        vertex.position = { (float)x, (float)y, z, z }; // TODO second "z" is not correct - 1/z instead?
+        //vertex.normal = triangle.v1.normal; // TODO interpolate normals
+        vertex.normal = w1 * triangle.v1.normal + w2 * triangle.v2.normal + w3 * triangle.v3.normal; // TODO interpolate normals
         vertex.viewDot = triangle.v1.viewDot;
 
         float4 color = PixelShader(vertex);
@@ -153,17 +177,6 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
       }
     }
   }
-}
-
-float4 Pipeline::PixelShader(VSOutput& psinput)
-{
-  float4 color = { psinput.viewDot * m_Kd.x + m_Ka.x, psinput.viewDot * m_Kd.y + m_Ka.y, psinput.viewDot * m_Kd.z + m_Ka.z, 1.0f };
-
-  color.r = min(color.r, 1.0f);
-  color.g = min(color.g, 1.0f);
-  color.b = min(color.b, 1.0f);
-
-  return color;
 }
 
 void Pipeline::OutputMerger(uint16_t x, uint16_t y, float4 color)
