@@ -34,8 +34,7 @@ struct Triangle
   Vertex v1, v2, v3;
 };
 
-// TODO: methods are inlined because I want to include them in headers
-
+// Methods are inlined because I want to include them in headers
 namespace math
 {
   // Utils methods

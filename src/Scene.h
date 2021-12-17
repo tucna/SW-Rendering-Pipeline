@@ -12,11 +12,6 @@ namespace objl
   class Loader;
 }
 
-namespace tDX
-{
-  class PixelGameEngine;
-}
-
 class Scene
 {
 public:
@@ -34,7 +29,9 @@ private:
   void PlaceModelToCenter();
 
   std::unique_ptr<objl::Loader> m_loader;
+  std::unique_ptr<Pipeline> m_pipeline;
 
+  // Matrices
   float3 m_translation = { 0, 0, 0 };
   float3 m_rotation = { 0, 0, 0 };
 
@@ -49,15 +46,14 @@ private:
   float3 m_target = { 0, 0, -1 };
   float3 m_up = { 0, 1, 0 };
 
-  std::unique_ptr<Pipeline> m_pipeline;
+  byte4* m_renderTarget;
+
   std::vector<std::vector<Vertex>> m_sortedVerticesByMaterial;
   std::vector< std::vector<uint32_t>> m_sortedIndicesByMaterial;
 
-  float* m_depthBuffer = nullptr;
-
+  float* m_depthBuffer;
   float m_aspectRatio;
 
-  byte4* m_renderTarget;
   uint16_t m_screenWidth;
   uint16_t m_screenHeight;
 };

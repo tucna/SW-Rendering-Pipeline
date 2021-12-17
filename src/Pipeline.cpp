@@ -144,18 +144,12 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
         m_depthBuffer[y * m_buffersWidth + x] = z;
 
         VSOutput vertex;
-        vertex.position = { (float)x, (float)y, z, z }; // TODO second "z" is not correct - 1/z instead?
+        vertex.position = { (float)x, (float)y, 1.0f/z, z }; // TODO second "z" is not correct - 1/z instead?
         vertex.normal = triangle.v1.normal; // TODO interpolate normals
         vertex.viewDot = triangle.v1.viewDot;
 
         float4 color = PixelShader(vertex);
-
-        m_renderTarget[y * m_buffersWidth + x] = {
-          (uint8_t)(lround(color.r * 255)),
-          (uint8_t)(lround(color.g * 255)),
-          (uint8_t)(lround(color.b * 255)),
-          (uint8_t)(lround(color.a * 255))
-        };
+        OutputMerger(x, y, color);
       }
     }
   }
@@ -170,6 +164,16 @@ float4 Pipeline::PixelShader(VSOutput& psinput)
   color.b = min(color.b, 1.0f);
 
   return color;
+}
+
+void Pipeline::OutputMerger(uint16_t x, uint16_t y, float4 color)
+{
+  m_renderTarget[y * m_buffersWidth + x] = {
+    (uint8_t)(lround(color.r * 255)),
+    (uint8_t)(lround(color.g * 255)),
+    (uint8_t)(lround(color.b * 255)),
+    (uint8_t)(lround(color.a * 255))
+  };
 }
 
 void Pipeline::Cleanup()

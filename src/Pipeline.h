@@ -23,7 +23,7 @@ public:
   void SetVSBuffers(float4x4 mvpMatrix, float4x4 viewMatrix, float4x4 modelMatrix) { m_mvpMatrix = mvpMatrix; m_viewMatrix = viewMatrix; m_modelMatrix = modelMatrix; }
   void SetRSDescriptor(uint16_t viewportWidth, uint16_t viewportHeight, Culling culling) { m_viewportWidth = viewportWidth; m_viewportHeight = viewportHeight; m_culling = culling; }
   void SetPSBuffers(float3 Kd, float3 Ka) { m_Kd = Kd; m_Ka = Ka; }
-  void SetOMBuffers(float* depthBuffer, byte4* renderTarget, uint16_t buffersWidth, uint16_t buffersHeight) { m_depthBuffer = depthBuffer; m_renderTarget = renderTarget; m_buffersWidth = buffersWidth; m_buffersHeight = buffersHeight; } // TUCNA should not be necessary to save
+  void SetOMBuffers(float* depthBuffer, byte4* renderTarget, uint16_t buffersWidth, uint16_t buffersHeight) { m_depthBuffer = depthBuffer; m_renderTarget = renderTarget; m_buffersWidth = buffersWidth; m_buffersHeight = buffersHeight; }
 
   void ClearDepthBuffer();
   void Draw();
@@ -44,10 +44,10 @@ private:
   void InputAssembler();
   VSOutput VertexShader(const Vertex& vertex);
   void PostVertexShader(VSOutput& vsoutput);
-  void PrimitiveAssembly(); //primitive assembly
-  void Rasterizer(VSOutputTriangle& triangle); //rasterizer
+  void PrimitiveAssembly();
+  void Rasterizer(VSOutputTriangle& triangle);
   float4 PixelShader(VSOutput& psinput);
-  //void OM();
+  void OutputMerger(uint16_t x, uint16_t y, float4 color);
 
   void Cleanup();
 

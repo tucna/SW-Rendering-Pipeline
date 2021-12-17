@@ -14,7 +14,6 @@ Scene::Scene(const std::string& pathToModel, byte4* renderTarget, uint16_t scree
   m_loader = make_unique<objl::Loader>();
   m_loader->LoadFile(pathToModel);
 
-  // TODO
   m_depthBuffer = new float[screenWidth * screenHeight];
 
   m_pipeline = make_unique<Pipeline>();
@@ -33,7 +32,7 @@ Scene::Scene(const std::string& pathToModel, byte4* renderTarget, uint16_t scree
         for (auto& v : mesh.Vertices)
         {
           Vertex vertex;
-          vertex.position = {v.Position.X, v.Position.Y, v.Position.Z};
+          vertex.position = { v.Position.X, v.Position.Y, v.Position.Z };
           vertex.normal = { v.Normal.X, v.Normal.Y, v.Normal.Z };
 
           m_sortedVerticesByMaterial[materialID].push_back(vertex);
@@ -50,6 +49,7 @@ Scene::Scene(const std::string& pathToModel, byte4* renderTarget, uint16_t scree
 
 Scene::~Scene()
 {
+  delete[] m_depthBuffer;
 }
 
 void Scene::MoveCamera(float3 translation)
@@ -65,7 +65,7 @@ void Scene::RotateModel(float3 rotation)
 void Scene::Draw()
 {
   // Set pipeline
-  m_pipeline->SetRSDescriptor(800, 600, Pipeline::Culling::CW);
+  m_pipeline->SetRSDescriptor(m_screenWidth, m_screenHeight, Pipeline::Culling::CW);
   m_pipeline->SetOMBuffers(m_depthBuffer, m_renderTarget, m_screenWidth, m_screenHeight);
   m_pipeline->SetVSBuffers(m_mvpMatrix, m_viewMatrix, m_modelMatrix);
 
