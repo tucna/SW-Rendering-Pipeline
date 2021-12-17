@@ -20,7 +20,7 @@ namespace tDX
 class Scene
 {
 public:
-  Scene(const std::string& pathToModel, uint8_t* renderTarger, tDX::PixelGameEngine* engine);
+  Scene(const std::string& pathToModel, byte4* renderTarger);
   ~Scene();
 
   void MoveCamera(float3 translation);
@@ -29,8 +29,6 @@ public:
   void ComposeMatrices();
 
   void Draw();
-
-  std::vector<Triangle> GenerateTrianglesToDraw();
 
 private:
   constexpr static float m_aspectRatio = 800.0f / 600.0f; // TODO
@@ -60,6 +58,5 @@ private:
   float* m_depthBuffer = nullptr;
 
   // TODO bad smell!
-  tDX::PixelGameEngine* m_engine;
-  uint8_t* m_renderTarget;
+  byte4* m_renderTarget;
 };

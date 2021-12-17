@@ -17,7 +17,7 @@ public:
     renderTarget(800,600)
   {
     sAppName = "Light";
-    m_scene = make_unique<Scene>("res/cornell_box.obj", (uint8_t*)renderTarget.GetData(), this);
+    m_scene = make_unique<Scene>("res/cornell_box.obj", (byte4*)renderTarget.GetData());
     //m_scene = make_unique<Scene>("res/nefertiti.obj", this);
   }
 

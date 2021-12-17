@@ -1,15 +1,13 @@
 #include <algorithm>
 
 #include "Pipeline.h"
-#include "../engine/tPixelGameEngine.h"
 
 using namespace std;
 using namespace math;
 
 void Pipeline::ClearDepthBuffer()
 {
-  // TODO
-  for (size_t i = 0; i < 800 * 600; i++)
+  for (size_t i = 0; i < m_buffersWidth * m_buffersHeight; i++)
     m_depthBuffer[i] = std::numeric_limits<float>::min();
 }
 
@@ -141,9 +139,9 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
 
       float z = w1 * v1.z + w2 * v2.z + w3 * v3.z;
 
-      if (z > m_depthBuffer[y * 800 + x]) // TUCNA
+      if (z > m_depthBuffer[y * m_buffersWidth + x])
       {
-        m_depthBuffer[y * 800 + x] = z;
+        m_depthBuffer[y * m_buffersWidth + x] = z;
 
         VSOutput vertex;
         vertex.position = { (float)x, (float)y, z, z }; // TODO second "z" is not correct - 1/z instead?
@@ -152,10 +150,12 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
 
         float4 color = PixelShader(vertex);
 
-        m_renderTarget[y * (800 * 4) + (x * 4) + 0] = (uint8_t)(lround(color.x * 255));
-        m_renderTarget[y * (800 * 4) + (x * 4) + 1] = (uint8_t)(lround(color.y * 255));
-        m_renderTarget[y * (800 * 4) + (x * 4) + 2] = (uint8_t)(lround(color.z * 255));
-        m_renderTarget[y * (800 * 4) + (x * 4) + 3] = (uint8_t)(lround(color.w * 255));
+        m_renderTarget[y * m_buffersWidth + x] = {
+          (uint8_t)(lround(color.r * 255)),
+          (uint8_t)(lround(color.g * 255)),
+          (uint8_t)(lround(color.b * 255)),
+          (uint8_t)(lround(color.a * 255))
+        };
       }
     }
   }
