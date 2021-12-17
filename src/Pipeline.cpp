@@ -45,31 +45,42 @@ Pipeline::VSOutput Pipeline::VertexShader(const Vertex& vertex)
 
   output.position = m_mvpMatrix * float4(vertex.position, 1.0f);
 
+  output.normal = vertex.normal;
+  /*
   float4 n = m_modelMatrix * float4(vertex.normal, 0.0f);
   output.normal = {n.x, n.y, n.z};
-
-  /*
+  */
+  
   // Flat shading
   float4 v = m_viewMatrix * m_modelMatrix * float4(vertex.position, 1.0f);
   float4 n = m_viewMatrix * m_modelMatrix * float4(vertex.normal, 0.0f);
 
   float dotP = dot(normalize({ v.x, v.y, v.z }), normalize({ n.x, n.y, n.z }));
   output.viewDot = abs(dotP);
-  */
+  
 
-  output.viewDot = 0.0f;
+  //output.viewDot = 0.0f;
 
   return output;
 }
 
 float4 Pipeline::PixelShader(VSOutput& psinput)
 {
-  /*
+
   // Flat shading
   float4 color = { psinput.viewDot * m_Kd.x + m_Ka.x, psinput.viewDot * m_Kd.y + m_Ka.y, psinput.viewDot * m_Kd.z + m_Ka.z, 1.0f };
+
+  /*
+  float4 n = m_modelMatrix * float4(psinput.normal, 0.0f);
+  float3 nn = normalize({n.x, n.y, n.z});
+
+  float4 color = { (nn.x + 1.0f) * 0.5f, (nn.y) * 0.5f, (nn.z) * 0.5f, 1.0f };
   */
 
-  float4 color = { (psinput.normal.x + 1.0f) * 0.5f, (psinput.normal.y) * 0.5f, (psinput.normal.z) * 0.5f, 1.0f };
+  /*
+  float3 n = normalize(psinput.normal);
+  float4 color = { (n.x + 1.0f) * 0.5f, (n.y + 1.0f) * 0.5f, (n.z + 1.0f) * 0.5f, 1.0f };
+  */
 
   color.r = min(color.r, 1.0f);
   color.g = min(color.g, 1.0f);

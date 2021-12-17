@@ -20,8 +20,8 @@ Scene::Scene(const std::string& pathToModel, byte4* renderTarget, uint16_t scree
 
   size_t bufferSize = m_loader->LoadedMaterials.size() == 0 ? 1 : m_loader->LoadedMaterials.size();
 
-  m_sortedVerticesByMaterial.resize(bufferSize);
-  m_sortedIndicesByMaterial.resize(bufferSize);
+  m_sortedVerticesByMaterial.resize(bufferSize + 1); // Light material
+  m_sortedIndicesByMaterial.resize(bufferSize + 1); // Light material
 
   for (auto& mesh : m_loader->LoadedMeshes)
   {
@@ -43,6 +43,21 @@ Scene::Scene(const std::string& pathToModel, byte4* renderTarget, uint16_t scree
       }
     }
   }
+
+  // TODO light
+  objl::Material lightMaterial = {};
+  lightMaterial.Ka = { 1.0f, 1.0f, 1.0f };
+  lightMaterial.Kd = { 1.0f, 1.0f, 1.0f };
+
+  m_loader->LoadedMaterials.push_back(lightMaterial);
+
+  m_sortedVerticesByMaterial[m_loader->LoadedMaterials.size() - 1].push_back({ { -0.25f,     0, 0 }, { 0, 1, 0 } });
+  m_sortedVerticesByMaterial[m_loader->LoadedMaterials.size() - 1].push_back({ {  0.25f, -0.25, 0 }, { 0, 1, 0 } });
+  m_sortedVerticesByMaterial[m_loader->LoadedMaterials.size() - 1].push_back({ {  0.25f,  0.25, 0 }, { 0, 1, 0 } });
+
+  m_sortedIndicesByMaterial[m_loader->LoadedMaterials.size() - 1].push_back(m_sortedVerticesByMaterial[0].size() - 3);
+  m_sortedIndicesByMaterial[m_loader->LoadedMaterials.size() - 1].push_back(m_sortedVerticesByMaterial[0].size() - 2);
+  m_sortedIndicesByMaterial[m_loader->LoadedMaterials.size() - 1].push_back(m_sortedVerticesByMaterial[0].size() - 1);
 
   PlaceModelToCenter();
 }
@@ -75,6 +90,11 @@ void Scene::Draw()
 
   for (size_t materialID = 0; materialID < bufferSize; materialID++)
   {
+    if (materialID == bufferSize - 1) // Light
+    {
+      m_pipeline->SetVSBuffers(m_mvpLightMatrix, m_viewMatrix, m_modelMatrix);
+    }
+
     m_pipeline->SetIAInput(m_sortedVerticesByMaterial[materialID], m_sortedIndicesByMaterial[materialID]);
 
     if (bufferSize > 1)
@@ -140,6 +160,14 @@ void Scene::ComposeMatrices()
 
   m_modelMatrix = m_rotationMatrix * m_translationMatrix;
 
+  float4x4 m_modelLightMatrix =
+  { {
+    {{ 1, 0, 0, 0 }},
+    {{ 0, 1, 0, 0 }},
+    {{ 0, 0, 1, 0 }},
+    {{ 0, 0, 0, 1 }},
+  } };
+
   // View matrix
   float3 zaxis = normalize(m_target - m_eye);
   float3 xaxis = normalize(cross(zaxis, m_up));
@@ -170,4 +198,5 @@ void Scene::ComposeMatrices()
   } };
 
   m_mvpMatrix = m_projectionMatrix * m_viewMatrix * m_modelMatrix;
+  m_mvpLightMatrix = m_projectionMatrix * m_viewMatrix * m_modelLightMatrix;
 }

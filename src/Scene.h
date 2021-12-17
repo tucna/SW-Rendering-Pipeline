@@ -41,6 +41,9 @@ private:
 
   float4x4 m_mvpMatrix;
 
+  // Light
+  float4x4 m_mvpLightMatrix;
+
   // Look at
   float3 m_eye = { 0, 0, 0 };
   float3 m_target = { 0, 0, -1 };
