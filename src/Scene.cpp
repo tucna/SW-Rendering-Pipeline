@@ -4,15 +4,18 @@
 using namespace std;
 using namespace math;
 
-Scene::Scene(const std::string& pathToModel, byte4* renderTarget)
+Scene::Scene(const std::string& pathToModel, byte4* renderTarget, uint16_t screenWidth, uint16_t screenHeight) :
+  m_screenWidth(screenWidth),
+  m_screenHeight(screenHeight),
+  m_renderTarget(renderTarget)
 {
-  m_renderTarget = renderTarget;
+  m_aspectRatio = (float)screenWidth / (float)screenHeight;
 
   m_loader = make_unique<objl::Loader>();
   m_loader->LoadFile(pathToModel);
 
   // TODO
-  m_depthBuffer = new float[800 * 600];
+  m_depthBuffer = new float[screenWidth * screenHeight];
 
   m_pipeline = make_unique<Pipeline>();
 
@@ -63,7 +66,7 @@ void Scene::Draw()
 {
   // Set pipeline
   m_pipeline->SetRSDescriptor(800, 600, Pipeline::Culling::CW);
-  m_pipeline->SetOMBuffers(m_depthBuffer, m_renderTarget, 800, 600);
+  m_pipeline->SetOMBuffers(m_depthBuffer, m_renderTarget, m_screenWidth, m_screenHeight);
   m_pipeline->SetVSBuffers(m_mvpMatrix, m_viewMatrix, m_modelMatrix);
 
   m_pipeline->ClearDepthBuffer();

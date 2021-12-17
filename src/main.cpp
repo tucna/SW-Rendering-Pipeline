@@ -13,17 +13,19 @@ using namespace math;
 class Light : public tDX::PixelGameEngine
 {
 public:
-  Light() :
-    renderTarget(800,600)
+  Light()
   {
     sAppName = "Light";
-    m_scene = make_unique<Scene>("res/cornell_box.obj", (byte4*)renderTarget.GetData());
-    //m_scene = make_unique<Scene>("res/nefertiti.obj", this);
   }
 
   bool OnUserCreate() override
   {
-    SetDrawTarget(&renderTarget);
+    m_renderTarget = make_unique<tDX::Sprite>(ScreenWidth(), ScreenHeight());
+
+    SetDrawTarget(m_renderTarget.get());
+
+    m_scene = make_unique<Scene>("res/cornell_box.obj", (byte4*)m_renderTarget->GetData(), ScreenWidth(), ScreenHeight());
+    //m_scene = make_unique<Scene>("res/nefertiti.obj", (byte4*)renderTarget.GetData(), ScreenWidth(), ScreenHeight());
 
     return true;
   }
@@ -49,8 +51,7 @@ public:
 
 private:
   unique_ptr<Scene> m_scene;
-
-  tDX::Sprite renderTarget; // TUCNA should not be there
+  unique_ptr<tDX::Sprite> m_renderTarget;
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)

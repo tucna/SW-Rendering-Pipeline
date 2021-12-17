@@ -20,7 +20,7 @@ namespace tDX
 class Scene
 {
 public:
-  Scene(const std::string& pathToModel, byte4* renderTarger);
+  Scene(const std::string& pathToModel, byte4* renderTarger, uint16_t screenWidth, uint16_t screenHeight);
   ~Scene();
 
   void MoveCamera(float3 translation);
@@ -31,8 +31,6 @@ public:
   void Draw();
 
 private:
-  constexpr static float m_aspectRatio = 800.0f / 600.0f; // TODO
-
   void PlaceModelToCenter();
 
   std::unique_ptr<objl::Loader> m_loader;
@@ -57,6 +55,9 @@ private:
 
   float* m_depthBuffer = nullptr;
 
-  // TODO bad smell!
+  float m_aspectRatio;
+
   byte4* m_renderTarget;
+  uint16_t m_screenWidth;
+  uint16_t m_screenHeight;
 };
