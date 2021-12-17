@@ -6,8 +6,9 @@
 using namespace std;
 using namespace math;
 
-Scene::Scene(const std::string& pathToModel, tDX::PixelGameEngine* engine)
+Scene::Scene(const std::string& pathToModel, uint8_t* renderTarget, tDX::PixelGameEngine* engine)
 {
+  m_renderTarget = renderTarget;
   m_engine = engine;
 
   m_loader = make_unique<objl::Loader>();
@@ -65,7 +66,7 @@ void Scene::Draw()
 {
   // Set pipeline
   m_pipeline->SetRSDescriptor(800, 600, Pipeline::Culling::CW);
-  m_pipeline->SetOMBuffers(m_depthBuffer);
+  m_pipeline->SetOMBuffers(m_depthBuffer, m_renderTarget);
   m_pipeline->SetVSBuffers(m_mvpMatrix, m_viewMatrix, m_modelMatrix);
 
   m_pipeline->ClearDepthBuffer();

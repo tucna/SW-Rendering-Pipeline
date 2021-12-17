@@ -1201,8 +1201,8 @@ namespace tDX
         // Update texture to be rendered
         D3D11_MAPPED_SUBRESOURCE mappedTexture;
         m_d3dContext->Map(m_texture.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedTexture);
-        //memcpy(mappedTexture.pData, pDrawTarget->GetData(), pDrawTarget->width * pDrawTarget->height * 4);
-        memcpy(mappedTexture.pData, pDefaultDrawTarget->GetData(), pDefaultDrawTarget->width * pDefaultDrawTarget->height * 4);
+        memcpy(mappedTexture.pData, pDrawTarget->GetData(), pDrawTarget->width * pDrawTarget->height * 4);
+        //memcpy(mappedTexture.pData, pDefaultDrawTarget->GetData(), pDefaultDrawTarget->width * pDefaultDrawTarget->height * 4);
         m_d3dContext->Unmap(m_texture.Get(), 0);
 
         // Bind RT

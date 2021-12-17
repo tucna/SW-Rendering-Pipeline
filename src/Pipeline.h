@@ -26,7 +26,7 @@ public:
   void SetVSBuffers(float4x4 mvpMatrix, float4x4 viewMatrix, float4x4 modelMatrix) { m_mvpMatrix = mvpMatrix; m_viewMatrix = viewMatrix; m_modelMatrix = modelMatrix; }
   void SetRSDescriptor(uint16_t viewportWidth, uint16_t viewportHeight, Culling culling) { m_viewportWidth = viewportWidth; m_viewportHeight = viewportHeight; m_culling = culling; }
   void SetPSBuffers(float3 Kd, float3 Ka) { m_Kd = Kd; m_Ka = Ka; }
-  void SetOMBuffers(float* depthBuffer) { m_depthBuffer = depthBuffer; }
+  void SetOMBuffers(float* depthBuffer, uint8_t* renderTarget) { m_depthBuffer = depthBuffer; m_renderTarget = renderTarget; } // TUCNA should not be necessary to save
 
   void ClearDepthBuffer();
   void Draw();
@@ -78,6 +78,7 @@ private:
 
   // OM
   float* m_depthBuffer = nullptr;
+  uint8_t* m_renderTarget = nullptr;
 
   // TODO delete
   tDX::PixelGameEngine* m_engine;

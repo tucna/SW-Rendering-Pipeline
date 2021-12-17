@@ -20,7 +20,7 @@ namespace tDX
 class Scene
 {
 public:
-  Scene(const std::string& pathToModel, tDX::PixelGameEngine* engine);
+  Scene(const std::string& pathToModel, uint8_t* renderTarger, tDX::PixelGameEngine* engine);
   ~Scene();
 
   void MoveCamera(float3 translation);
@@ -61,4 +61,5 @@ private:
 
   // TODO bad smell!
   tDX::PixelGameEngine* m_engine;
+  uint8_t* m_renderTarget;
 };

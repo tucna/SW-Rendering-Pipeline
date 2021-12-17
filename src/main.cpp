@@ -16,13 +16,17 @@ public:
   Light() :
     renderTarget(800,600)
   {
+    //TUCNA TODO Test
+    //renderTarget.SetPixel(0,0, tDX::WHITE);
     sAppName = "Light";
-    m_scene = make_unique<Scene>("res/cornell_box.obj", this);
+    m_scene = make_unique<Scene>("res/cornell_box.obj", (uint8_t*)renderTarget.GetData(), this);
     //m_scene = make_unique<Scene>("res/nefertiti.obj", this);
   }
 
   bool OnUserCreate() override
   {
+    SetDrawTarget(&renderTarget);
+
     return true;
   }
 

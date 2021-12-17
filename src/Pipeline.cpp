@@ -157,7 +157,10 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
 
         float4 color = PixelShader(vertex);
 
-        m_engine->Draw(x,y, {uint8_t(color.x * 255), uint8_t(color.y * 255), uint8_t(color.z * 255)});
+        //m_engine->Draw(x,y, {uint8_t(color.x * 255), uint8_t(color.y * 255), uint8_t(color.z * 255)});
+        m_renderTarget[y * (800 * 4) + (x * 4) + 0] = uint8_t((color.x + color.y + color.z) / 3.0f * 255);
+        m_renderTarget[y * (800 * 4) + (x * 4) + 1] = uint8_t((color.x + color.y + color.z) / 3.0f * 255);
+        m_renderTarget[y * (800 * 4) + (x * 4) + 2] = uint8_t((color.x + color.y + color.z) / 3.0f * 255);
       }
     }
   }
