@@ -24,51 +24,33 @@ void Pipeline::ClearDepthBuffer()
 
 void Pipeline::Draw()
 {
-  // TODO clear
-  m_VSOutputs.clear();
-  m_VSOutputTriangles.clear();
-  // --------
+  // Clean all internal structures
+  Cleanup();
 
-  IA();
+  InputAssembler();
 
   // VS
   for (size_t vertexID = 0; vertexID < m_vertices->size(); vertexID++)
   {
-    VSOutput output = VS(m_vertices->at(vertexID));
+    VSOutput output = VertexShader(m_vertices->at(vertexID));
 
-    PostVS(output);
+    PostVertexShader(output);
 
     m_VSOutputs.push_back(output);
   }
 
-  PA();
+  PrimitiveAssembly();
 
   for (auto& triangle : m_VSOutputTriangles)
-    RS(triangle);
+    Rasterizer(triangle);
 }
 
-void Pipeline::IA()
+void Pipeline::InputAssembler()
 {
-  // Nothing to do in here
-
-  /*
-  for (size_t index = 0; index < m_indices->size(); index += 3)
-  {
-    Triangle triangle;
-
-    triangle.v1.position = m_vertices->at(m_indices->at(index)).position;
-    triangle.v1.normal = m_vertices->at(m_indices->at(index)).normal;
-    triangle.v2.position = m_vertices->at(m_indices->at(index + 1)).position;
-    triangle.v2.normal = m_vertices->at(m_indices->at(index + 1)).normal;
-    triangle.v3.position = m_vertices->at(m_indices->at(index + 2)).position;
-    triangle.v3.normal = m_vertices->at(m_indices->at(index + 2)).normal;
-
-    m_triangles.push_back(triangle);
-  }
-  */
+  // Nothing to do in here yet
 }
 
-Pipeline::VSOutput Pipeline::VS(const Vertex& vertex)
+Pipeline::VSOutput Pipeline::VertexShader(const Vertex& vertex)
 {
   VSOutput output;
 
@@ -84,7 +66,7 @@ Pipeline::VSOutput Pipeline::VS(const Vertex& vertex)
   return output;
 }
 
-void Pipeline::PostVS(VSOutput& vsoutput)
+void Pipeline::PostVertexShader(VSOutput& vsoutput)
 {
   // Transform to NDC
   float invW = 1.0f / vsoutput.position.w;
@@ -94,40 +76,38 @@ void Pipeline::PostVS(VSOutput& vsoutput)
   vsoutput.position.z = invW;
 }
 
-void Pipeline::PA()
+void Pipeline::PrimitiveAssembly()
 {
+  auto FillUpData = [&](VSOutput& vertex, size_t index)
+  {
+    vertex.position = m_VSOutputs[index].position;
+    vertex.normal   = m_VSOutputs[index].normal;
+    vertex.viewDot  = m_VSOutputs[index].viewDot;
+  };
+
   for (size_t index = 0; index < m_VSOutputs.size(); index += 3)
   {
     VSOutputTriangle triangle;
 
-    // TODO lambda?
-    triangle.v1.position = m_VSOutputs[index + 0].position;
-    triangle.v1.normal   = m_VSOutputs[index + 0].normal;
-    triangle.v1.viewDot  = m_VSOutputs[index + 0].viewDot;
-    triangle.v2.position = m_VSOutputs[index + 1].position;
-    triangle.v2.normal   = m_VSOutputs[index + 1].normal;
-    triangle.v2.viewDot  = m_VSOutputs[index + 1].viewDot;
-    triangle.v3.position = m_VSOutputs[index + 2].position;
-    triangle.v3.normal   = m_VSOutputs[index + 2].normal;
-    triangle.v3.viewDot  = m_VSOutputs[index + 2].viewDot;
+    FillUpData(triangle.v1, index + 0);
+    FillUpData(triangle.v2, index + 1);
+    FillUpData(triangle.v3, index + 2);
 
     m_VSOutputTriangles.push_back(triangle);
   }
 }
 
-void Pipeline::RS(VSOutputTriangle& triangle)
+void Pipeline::Rasterizer(VSOutputTriangle& triangle)
 {
-  // TODO lambda?
+  auto ToScreenSpace = [&](float4& position)
+  {
+    position.x = (position.x + 1.0f) * m_viewportWidth * 0.5f;
+    position.y = (1.0f - position.y) * m_viewportHeight * 0.5f;
+  };
 
-  // To screen space
-  triangle.v1.position.x = (triangle.v1.position.x + 1.0f) * m_viewportWidth * 0.5f;
-  triangle.v1.position.y = (1.0f - triangle.v1.position.y) * m_viewportHeight * 0.5f;
-
-  triangle.v2.position.x = (triangle.v2.position.x + 1.0f) * m_viewportWidth * 0.5f;
-  triangle.v2.position.y = (1.0f - triangle.v2.position.y) * m_viewportHeight * 0.5f;
-
-  triangle.v3.position.x = (triangle.v3.position.x + 1.0f) * m_viewportWidth * 0.5f;
-  triangle.v3.position.y = (1.0f - triangle.v3.position.y) * m_viewportHeight * 0.5f;
+  ToScreenSpace(triangle.v1.position);
+  ToScreenSpace(triangle.v2.position);
+  ToScreenSpace(triangle.v3.position);
 
   float3 v1 = { triangle.v1.position.x, triangle.v1.position.y, triangle.v1.position.z };
   float3 v2 = { triangle.v2.position.x, triangle.v2.position.y, triangle.v2.position.z };
@@ -175,7 +155,7 @@ void Pipeline::RS(VSOutputTriangle& triangle)
         vertex.normal = triangle.v1.normal; // TODO interpolate normals
         vertex.viewDot = triangle.v1.viewDot;
 
-        float4 color = PS(vertex);
+        float4 color = PixelShader(vertex);
 
         m_engine->Draw(x,y, {uint8_t(color.x * 255), uint8_t(color.y * 255), uint8_t(color.z * 255)});
       }
@@ -183,7 +163,7 @@ void Pipeline::RS(VSOutputTriangle& triangle)
   }
 }
 
-float4 Pipeline::PS(VSOutput& psinput)
+float4 Pipeline::PixelShader(VSOutput& psinput)
 {
   float4 color = { psinput.viewDot * m_Kd.x + m_Ka.x, psinput.viewDot * m_Kd.y + m_Ka.y, psinput.viewDot * m_Kd.z + m_Ka.z, 1.0f };
 
@@ -192,4 +172,10 @@ float4 Pipeline::PS(VSOutput& psinput)
   color.b = min(color.b, 1.0f);
 
   return color;
+}
+
+void Pipeline::Cleanup()
+{
+  m_VSOutputs.clear();
+  m_VSOutputTriangles.clear();
 }

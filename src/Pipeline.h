@@ -44,13 +44,15 @@ private:
     VSOutput v1, v2, v3;
   };
 
-  void IA();
-  VSOutput VS(const Vertex& vertex);
-  void PostVS(VSOutput& vsoutput);
-  void PA(); //primitive assembly
-  void RS(VSOutputTriangle& triangle); //rasterizer
-  float4 PS(VSOutput& psinput);
+  void InputAssembler();
+  VSOutput VertexShader(const Vertex& vertex);
+  void PostVertexShader(VSOutput& vsoutput);
+  void PrimitiveAssembly(); //primitive assembly
+  void Rasterizer(VSOutputTriangle& triangle); //rasterizer
+  float4 PixelShader(VSOutput& psinput);
   //void OM();
+
+  void Cleanup();
 
   // IA
   const std::vector<Vertex>* m_vertices;
