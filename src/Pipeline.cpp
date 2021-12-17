@@ -45,46 +45,30 @@ Pipeline::VSOutput Pipeline::VertexShader(const Vertex& vertex)
 
   output.position = m_mvpMatrix * float4(vertex.position, 1.0f);
 
-  output.normal = vertex.normal;
-  /*
+  float4 wp = m_modelMatrix * float4(vertex.position, 1.0f);
+  output.worldPosition = { wp.x, wp.y, wp.z };
+
   float4 n = m_modelMatrix * float4(vertex.normal, 0.0f);
   output.normal = {n.x, n.y, n.z};
-  */
-  
-  // Flat shading
-  float4 v = m_viewMatrix * m_modelMatrix * float4(vertex.position, 1.0f);
-  float4 n = m_viewMatrix * m_modelMatrix * float4(vertex.normal, 0.0f);
-
-  float dotP = dot(normalize({ v.x, v.y, v.z }), normalize({ n.x, n.y, n.z }));
-  output.viewDot = abs(dotP);
-  
-
-  //output.viewDot = 0.0f;
 
   return output;
 }
 
 float4 Pipeline::PixelShader(VSOutput& psinput)
 {
-
-  // Flat shading
-  float4 color = { psinput.viewDot * m_Kd.x + m_Ka.x, psinput.viewDot * m_Kd.y + m_Ka.y, psinput.viewDot * m_Kd.z + m_Ka.z, 1.0f };
-
-  /*
-  float4 n = m_modelMatrix * float4(psinput.normal, 0.0f);
-  float3 nn = normalize({n.x, n.y, n.z});
-
-  float4 color = { (nn.x + 1.0f) * 0.5f, (nn.y) * 0.5f, (nn.z) * 0.5f, 1.0f };
-  */
-
-  /*
+  float3 lightDir = normalize(m_lightPosition - psinput.worldPosition);
   float3 n = normalize(psinput.normal);
-  float4 color = { (n.x + 1.0f) * 0.5f, (n.y + 1.0f) * 0.5f, (n.z + 1.0f) * 0.5f, 1.0f };
-  */
 
-  color.r = min(color.r, 1.0f);
-  color.g = min(color.g, 1.0f);
-  color.b = min(color.b, 1.0f);
+  float diffuse = saturate(dot(n, lightDir));
+
+  // Fall-off
+  diffuse *= ((length(lightDir) * length(lightDir)) / dot(m_lightPosition - psinput.worldPosition, m_lightPosition - psinput.worldPosition));
+
+  float4 color;
+  color.r = saturate(m_Ka.x + (m_Kd.x * diffuse));
+  color.g = saturate(m_Ka.y + (m_Kd.y * diffuse));
+  color.b = saturate(m_Ka.z + (m_Kd.z * diffuse));
+  color.a = 1.0f;
 
   return color;
 }
@@ -104,8 +88,8 @@ void Pipeline::PrimitiveAssembly()
   auto FillUpData = [&](VSOutput& vertex, size_t index)
   {
     vertex.position = m_VSOutputs[index].position;
+    vertex.worldPosition = m_VSOutputs[index].worldPosition;
     vertex.normal   = m_VSOutputs[index].normal;
-    vertex.viewDot  = m_VSOutputs[index].viewDot;
   };
 
   for (size_t index = 0; index < m_VSOutputs.size(); index += 3)
@@ -179,9 +163,8 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
 
         VSOutput vertex;
         vertex.position = { (float)x, (float)y, z, z }; // TODO second "z" is not correct - 1/z instead?
-        //vertex.normal = triangle.v1.normal; // TODO interpolate normals
-        vertex.normal = w1 * triangle.v1.normal + w2 * triangle.v2.normal + w3 * triangle.v3.normal; // TODO interpolate normals
-        vertex.viewDot = triangle.v1.viewDot;
+        vertex.worldPosition = w1 * triangle.v1.worldPosition + w2 * triangle.v2.worldPosition + w3 * triangle.v3.worldPosition;
+        vertex.normal = w1 * triangle.v1.normal + w2 * triangle.v2.normal + w3 * triangle.v3.normal;
 
         float4 color = PixelShader(vertex);
         OutputMerger(x, y, color);

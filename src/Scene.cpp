@@ -55,9 +55,9 @@ Scene::Scene(const std::string& pathToModel, byte4* renderTarget, uint16_t scree
   m_sortedVerticesByMaterial[m_loader->LoadedMaterials.size() - 1].push_back({ {  0.25f, -0.25, 0 }, { 0, 1, 0 } });
   m_sortedVerticesByMaterial[m_loader->LoadedMaterials.size() - 1].push_back({ {  0.25f,  0.25, 0 }, { 0, 1, 0 } });
 
-  m_sortedIndicesByMaterial[m_loader->LoadedMaterials.size() - 1].push_back(m_sortedVerticesByMaterial[0].size() - 3);
-  m_sortedIndicesByMaterial[m_loader->LoadedMaterials.size() - 1].push_back(m_sortedVerticesByMaterial[0].size() - 2);
-  m_sortedIndicesByMaterial[m_loader->LoadedMaterials.size() - 1].push_back(m_sortedVerticesByMaterial[0].size() - 1);
+  m_sortedIndicesByMaterial[m_loader->LoadedMaterials.size() - 1].push_back((uint32_t)m_sortedVerticesByMaterial[0].size() - 3);
+  m_sortedIndicesByMaterial[m_loader->LoadedMaterials.size() - 1].push_back((uint32_t)m_sortedVerticesByMaterial[0].size() - 2);
+  m_sortedIndicesByMaterial[m_loader->LoadedMaterials.size() - 1].push_back((uint32_t)m_sortedVerticesByMaterial[0].size() - 1);
 
   PlaceModelToCenter();
 }
@@ -70,6 +70,11 @@ Scene::~Scene()
 void Scene::MoveCamera(float3 translation)
 {
   m_eye += translation;
+}
+
+void Scene::MoveLight(float3 translation)
+{
+  m_lightTranslation += translation;
 }
 
 void Scene::RotateModel(float3 rotation)
@@ -101,14 +106,16 @@ void Scene::Draw()
     {
       m_pipeline->SetPSBuffers(
         { m_loader->LoadedMaterials[materialID].Kd.X, m_loader->LoadedMaterials[materialID].Kd.Y, m_loader->LoadedMaterials[materialID].Kd.Z },
-        { m_loader->LoadedMaterials[materialID].Ka.X, m_loader->LoadedMaterials[materialID].Ka.Y, m_loader->LoadedMaterials[materialID].Ka.Z }
+        { m_loader->LoadedMaterials[materialID].Ka.X, m_loader->LoadedMaterials[materialID].Ka.Y, m_loader->LoadedMaterials[materialID].Ka.Z },
+        m_lightTranslation
       );
     }
     else
     {
       m_pipeline->SetPSBuffers(
         { 0.8f, 0.8f, 0.8f },
-        { 0.1f, 0.1f, 0.1f }
+        { 0.1f, 0.1f, 0.1f },
+        { 0.0f, 0.0f, 0.0f }
       );
     }
 
@@ -162,9 +169,9 @@ void Scene::ComposeMatrices()
 
   float4x4 m_modelLightMatrix =
   { {
-    {{ 1, 0, 0, 0 }},
-    {{ 0, 1, 0, 0 }},
-    {{ 0, 0, 1, 0 }},
+    {{ 1, 0, 0, m_lightTranslation.x }},
+    {{ 0, 1, 0, m_lightTranslation.y }},
+    {{ 0, 0, 1, m_lightTranslation.z }},
     {{ 0, 0, 0, 1 }},
   } };
 

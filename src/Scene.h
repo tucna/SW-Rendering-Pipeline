@@ -19,6 +19,7 @@ public:
   ~Scene();
 
   void MoveCamera(float3 translation);
+  void MoveLight(float3 translation);
   void RotateModel(float3 rotation);
 
   void ComposeMatrices();
@@ -42,6 +43,7 @@ private:
   float4x4 m_mvpMatrix;
 
   // Light
+  float3 m_lightTranslation = { 0, 0, 0 };
   float4x4 m_mvpLightMatrix;
 
   // Look at

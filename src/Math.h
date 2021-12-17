@@ -41,7 +41,8 @@ namespace math
   inline float toRad(float deg) { return deg * PI / 180.0f; }
   inline float dot(const float4& v1, const float4& v2) { return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z + v1.w * v2.w; }
   inline float dot(const float3& v1, const float3& v2) { return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z; }
-  inline float length(const float3& v1) { return sqrt(v1.x * v1.x + v1.y * v1.y + v1.z * v1.z); };
+  inline float length(const float3& v1) { return sqrt(v1.x * v1.x + v1.y * v1.y + v1.z * v1.z); }
+  inline float saturate(float s) { return s < 0.0f ? 0.0f : s > 1.0f ? 1.0f : s; }
 
   inline float3 cross(const float3& v1, const float3& v2)
   {

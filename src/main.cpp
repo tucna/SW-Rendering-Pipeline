@@ -32,13 +32,18 @@ public:
     Clear(tDX::BLACK);
 
     // Keyboard control
-    float coeficient = 10.0f * fElapsedTime;
+    float coeficient = 5.0f * fElapsedTime;
 
     if (GetKey(tDX::SHIFT).bHeld) { coeficient *= 8; }
     if (GetKey(tDX::W).bHeld) { m_scene->MoveCamera({ 0, 0, -coeficient}); }
     if (GetKey(tDX::S).bHeld) { m_scene->MoveCamera({ 0, 0, coeficient }); }
     if (GetKey(tDX::E).bHeld) { m_scene->RotateModel({ 0, coeficient * 15, 0 }); }
     if (GetKey(tDX::Q).bHeld) { m_scene->RotateModel({ 0, -coeficient * 15, 0 }); }
+    if (GetKey(tDX::NP6).bHeld) { m_scene->MoveLight({ coeficient, 0, 0 }); }
+    if (GetKey(tDX::NP4).bHeld) { m_scene->MoveLight({ -coeficient, 0, 0 }); }
+    if (GetKey(tDX::NP5).bHeld) { m_scene->MoveLight({ 0, -coeficient, 0 }); }
+    if (GetKey(tDX::NP8).bHeld) { m_scene->MoveLight({ 0, coeficient, 0 }); }
+
 
     m_scene->ComposeMatrices();
     m_scene->Draw();
