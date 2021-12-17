@@ -21,6 +21,8 @@ struct float4
   float4(float3 xyz, float _w) { x = xyz.x; y = xyz.y; z = xyz.z; w = _w; }
 };
 
+struct byte4 { uint8_t r, g, b, a; };
+
 struct Vertex
 {
   float3 position;

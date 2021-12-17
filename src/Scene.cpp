@@ -17,7 +17,7 @@ Scene::Scene(const std::string& pathToModel, uint8_t* renderTarget, tDX::PixelGa
   // TODO
   m_depthBuffer = new float[800 * 600];
 
-  m_pipeline = make_unique<Pipeline>(m_engine);
+  m_pipeline = make_unique<Pipeline>();
 
   size_t bufferSize = m_loader->LoadedMaterials.size() == 0 ? 1 : m_loader->LoadedMaterials.size();
 

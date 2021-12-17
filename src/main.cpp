@@ -16,8 +16,6 @@ public:
   Light() :
     renderTarget(800,600)
   {
-    //TUCNA TODO Test
-    //renderTarget.SetPixel(0,0, tDX::WHITE);
     sAppName = "Light";
     m_scene = make_unique<Scene>("res/cornell_box.obj", (uint8_t*)renderTarget.GetData(), this);
     //m_scene = make_unique<Scene>("res/nefertiti.obj", this);
@@ -42,11 +40,6 @@ public:
     if (GetKey(tDX::S).bHeld) { m_scene->MoveCamera({ 0, 0, coeficient }); }
     if (GetKey(tDX::E).bHeld) { m_scene->RotateModel({ 0, coeficient * 15, 0 }); }
     if (GetKey(tDX::Q).bHeld) { m_scene->RotateModel({ 0, -coeficient * 15, 0 }); }
-
-    // TUCNA delete
-    //renderTarget.SetPixel(10,10, tDX::WHITE);
-    //SetDrawTarget(&renderTarget);
-    // ---------
 
     m_scene->ComposeMatrices();
     m_scene->Draw();

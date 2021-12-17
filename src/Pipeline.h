@@ -19,9 +19,6 @@ public:
     None
   };
 
-  Pipeline(tDX::PixelGameEngine* engine); // TODO TUCNA terrible
-  ~Pipeline();
-
   void SetIAInput(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices) { m_vertices = &vertices; m_indices = &indices; }
   void SetVSBuffers(float4x4 mvpMatrix, float4x4 viewMatrix, float4x4 modelMatrix) { m_mvpMatrix = mvpMatrix; m_viewMatrix = viewMatrix; m_modelMatrix = modelMatrix; }
   void SetRSDescriptor(uint16_t viewportWidth, uint16_t viewportHeight, Culling culling) { m_viewportWidth = viewportWidth; m_viewportHeight = viewportHeight; m_culling = culling; }
@@ -79,8 +76,5 @@ private:
   // OM
   float* m_depthBuffer = nullptr;
   uint8_t* m_renderTarget = nullptr;
-
-  // TODO delete
-  tDX::PixelGameEngine* m_engine;
 };
 

@@ -6,15 +6,6 @@
 using namespace std;
 using namespace math;
 
-Pipeline::Pipeline(tDX::PixelGameEngine * engine) :
-  m_engine(engine)
-{
-}
-
-Pipeline::~Pipeline()
-{
-}
-
 void Pipeline::ClearDepthBuffer()
 {
   // TODO
@@ -105,6 +96,11 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
     position.y = (1.0f - position.y) * m_viewportHeight * 0.5f;
   };
 
+  auto EdgeFunction = [](const float3& v1, const float3& v2, const float3& v3) -> float
+  {
+    return (v3.x - v1.x) * (v2.y - v1.y) - (v3.y - v1.y) * (v2.x - v1.x);
+  };
+
   ToScreenSpace(triangle.v1.position);
   ToScreenSpace(triangle.v2.position);
   ToScreenSpace(triangle.v3.position);
@@ -114,12 +110,12 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
   float3 v3 = { triangle.v3.position.x, triangle.v3.position.y, triangle.v3.position.z };
 
   // Culling
-  float area = (v1.x * (v2.y - v3.y) + v2.x * (v3.y - v1.y) + v3.x * (v1.y - v2.y)) / 2.0f;
+  float area = EdgeFunction(v1, v2, v3);
 
-  if ((m_culling == Culling::CW && area > 0.0f) || (m_culling == Culling::CCW && area < 0.0f))
+  if ((m_culling == Culling::CW && area < 0.0f) || (m_culling == Culling::CCW && area > 0.0f))
     return;
 
-  // get the bounding box of the triangle
+  // Get the bounding box of the triangle
   int maxX = lround(std::max(v1.x, std::max(v2.x, v3.x)));
   int minX = lround(std::min(v1.x, std::min(v2.x, v3.x)));
   int maxY = lround(std::max(v1.y, std::max(v2.y, v3.y)));
@@ -130,16 +126,15 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
   maxY = std::clamp(maxY, 0, m_viewportHeight - 1);
   minY = std::clamp(minY, 0, m_viewportHeight - 1);
 
-  // Barycentric interpolation
-  float det = 1.0f / ((v2.y - v3.y) * (v1.x - v3.x) + (v3.x - v2.x) * (v1.y - v3.y));
-
   for (uint16_t x = minX; x <= maxX; x++)
   {
     for (uint16_t y = minY; y <= maxY; y++)
     {
-      float w1 = ((v2.y - v3.y) * (x - v3.x) + (v3.x - v2.x) * (y - v3.y)) * det;
-      float w2 = ((v3.y - v1.y) * (x - v3.x) + (v1.x - v3.x) * (y - v3.y)) * det;
-      float w3 = 1.0f - w1 - w2;
+      // Barycentric interpolation
+      float3 p = {x + 0.5f, y + 0.5f, 0.0f};
+      float w1 = EdgeFunction(v2, v3, p) / area;
+      float w2 = EdgeFunction(v3, v1, p) / area;
+      float w3 = EdgeFunction(v1, v2, p) / area;
 
       if (w1 < 0 || w2 < 0 || w3 < 0)
         continue;
@@ -157,10 +152,10 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
 
         float4 color = PixelShader(vertex);
 
-        //m_engine->Draw(x,y, {uint8_t(color.x * 255), uint8_t(color.y * 255), uint8_t(color.z * 255)});
-        m_renderTarget[y * (800 * 4) + (x * 4) + 0] = uint8_t((color.x + color.y + color.z) / 3.0f * 255);
-        m_renderTarget[y * (800 * 4) + (x * 4) + 1] = uint8_t((color.x + color.y + color.z) / 3.0f * 255);
-        m_renderTarget[y * (800 * 4) + (x * 4) + 2] = uint8_t((color.x + color.y + color.z) / 3.0f * 255);
+        m_renderTarget[y * (800 * 4) + (x * 4) + 0] = (uint8_t)(lround(color.x * 255));
+        m_renderTarget[y * (800 * 4) + (x * 4) + 1] = (uint8_t)(lround(color.y * 255));
+        m_renderTarget[y * (800 * 4) + (x * 4) + 2] = (uint8_t)(lround(color.z * 255));
+        m_renderTarget[y * (800 * 4) + (x * 4) + 3] = (uint8_t)(lround(color.w * 255));
       }
     }
   }
