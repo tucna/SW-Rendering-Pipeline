@@ -51,11 +51,15 @@ Pipeline::VSOutput Pipeline::VertexShader(const Vertex& vertex)
   float4 n = m_modelMatrix * float4(vertex.normal, 0.0f);
   output.normal = {n.x, n.y, n.z};
 
+  output.uv = vertex.uv;
+
   return output;
 }
 
 float4 Pipeline::PixelShader(VSOutput& psinput)
 {
+  return {psinput.uv.y, psinput.uv.x, 0, 1};
+
   float3 lightColor = {1.0f, 1.0f, 1.0f};
   float3 objectColor = {0.8f, 0.5f, 0.2f};
 
@@ -122,6 +126,7 @@ void Pipeline::PrimitiveAssembly()
     vertex.position = m_VSOutputs[index].position;
     vertex.worldPosition = m_VSOutputs[index].worldPosition;
     vertex.normal   = m_VSOutputs[index].normal;
+    vertex.uv = m_VSOutputs[index].uv;
   };
 
   for (size_t index = 0; index < m_VSOutputs.size(); index += 3)
@@ -197,6 +202,7 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
         vertex.position = { (float)x, (float)y, z, z }; // TODO second "z" is not correct - 1/z instead?
         vertex.worldPosition = w1 * triangle.v1.worldPosition + w2 * triangle.v2.worldPosition + w3 * triangle.v3.worldPosition;
         vertex.normal = w1 * triangle.v1.normal + w2 * triangle.v2.normal + w3 * triangle.v3.normal;
+        vertex.uv = w1 * triangle.v1.uv + w2 * triangle.v2.uv + w3 * triangle.v3.uv;
 
         float4 color = PixelShader(vertex);
         OutputMerger(x, y, color);

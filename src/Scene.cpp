@@ -34,6 +34,7 @@ Scene::Scene(const std::string& pathToModel, byte4* renderTarget, uint16_t scree
           Vertex vertex;
           vertex.position = { v.Position.X, v.Position.Y, v.Position.Z };
           vertex.normal = { v.Normal.X, v.Normal.Y, v.Normal.Z };
+          vertex.uv = { v.TextureCoordinate.X, v.TextureCoordinate.Y };
 
           m_sortedVerticesByMaterial[materialID].push_back(vertex);
         }

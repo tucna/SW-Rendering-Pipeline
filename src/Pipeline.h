@@ -33,6 +33,7 @@ private:
   {
     float4 position;
     float3 worldPosition;
+    float2 uv;
     float3 normal;
   };
 
