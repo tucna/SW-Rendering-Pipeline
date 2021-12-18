@@ -58,18 +58,16 @@ Pipeline::VSOutput Pipeline::VertexShader(const Vertex& vertex)
 
 float4 Pipeline::PixelShader(VSOutput& psinput)
 {
-  //return {psinput.uv.y, psinput.uv.x, 0, 1};
-
   uint16_t texX = (uint16_t)lround(psinput.uv.x * 256);
   uint16_t texY = (uint16_t)lround((1.0f - psinput.uv.y) * 256);
 
   byte4 texColor = m_texture0[texY * 256 + texX];
 
-  return {texColor.r / 255.0f, texColor.g / 255.0f, texColor.b / 255.0f, 1.0f};
+  //return {texColor.r / 255.0f, texColor.g / 255.0f, texColor.b / 255.0f, 1.0f};
 
 
   float3 lightColor = {1.0f, 1.0f, 1.0f};
-  float3 objectColor = {0.8f, 0.5f, 0.2f};
+  float3 objectColor = { texColor.r / 255.0f, texColor.g / 255.0f, texColor.b / 255.0f }; //{0.8f, 0.5f, 0.2f};
 
   float ambientStrength = 0.1f;
   float3 ambient = ambientStrength * lightColor;
@@ -196,12 +194,6 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
   triangle.v2.position.w = 1.0f / triangle.v2.position.w;
   triangle.v3.position.w = 1.0f / triangle.v3.position.w;
 
-  /*
-  v1.z = 1.0f / v1.z;
-  v2.z = 1.0f / v2.z;
-  v3.z = 1.0f / v3.z;
-  */
-
   for (uint16_t x = minX; x <= maxX; x++)
   {
     for (uint16_t y = minY; y <= maxY; y++)
@@ -225,11 +217,11 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
         vertex.position = { (float)x, (float)y, z, z }; // TODO second "z" is not correct - 1/z instead?
         vertex.worldPosition = w1 * triangle.v1.worldPosition + w2 * triangle.v2.worldPosition + w3 * triangle.v3.worldPosition;
         vertex.normal = w1 * triangle.v1.normal + w2 * triangle.v2.normal + w3 * triangle.v3.normal;
-        //vertex.uv = w1 * triangle.v1.uv + w2 * triangle.v2.uv + w3 * triangle.v3.uv; TODO
-        float Tz = 1 / (w1 * triangle.v1.position.w + w2 * triangle.v2.position.w + w3 * triangle.v3.position.w);
         vertex.uv = w1 * triangle.v1.uv + w2 * triangle.v2.uv + w3 * triangle.v3.uv;
-        vertex.uv.x = vertex.uv.x * Tz;
-        vertex.uv.y = vertex.uv.y * Tz;
+
+        float w = 1 / (w1 * triangle.v1.position.w + w2 * triangle.v2.position.w + w3 * triangle.v3.position.w);
+        vertex.uv.x = vertex.uv.x * w;
+        vertex.uv.y = vertex.uv.y * w;
 
         float4 color = PixelShader(vertex);
         OutputMerger(x, y, color);
