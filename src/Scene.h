@@ -24,6 +24,8 @@ public:
 
   void ComposeMatrices();
 
+  void SetPSTexture(byte4* texture) { m_PSTexture = texture; }
+
   void Draw();
 
 private:
@@ -52,6 +54,7 @@ private:
   float3 m_up = { 0, 1, 0 };
 
   byte4* m_renderTarget;
+  byte4* m_PSTexture;
 
   std::vector<std::vector<Vertex>> m_sortedVerticesByMaterial;
   std::vector< std::vector<uint32_t>> m_sortedIndicesByMaterial;

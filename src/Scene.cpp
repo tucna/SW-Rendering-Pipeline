@@ -113,7 +113,8 @@ void Scene::Draw()
         { m_loader->LoadedMaterials[materialID].Kd.X, m_loader->LoadedMaterials[materialID].Kd.Y, m_loader->LoadedMaterials[materialID].Kd.Z },
         { m_loader->LoadedMaterials[materialID].Ka.X, m_loader->LoadedMaterials[materialID].Ka.Y, m_loader->LoadedMaterials[materialID].Ka.Z },
         m_lightTranslation,
-        m_eye
+        m_eye,
+        m_PSTexture
       );
     }
     else
@@ -122,7 +123,8 @@ void Scene::Draw()
         { 0.8f, 0.8f, 0.8f },
         { 0.1f, 0.1f, 0.1f },
         m_lightTranslation,
-        m_eye
+        m_eye,
+        m_PSTexture
       );
     }
 

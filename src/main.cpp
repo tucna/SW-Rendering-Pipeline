@@ -19,9 +19,13 @@ public:
   bool OnUserCreate() override
   {
     m_renderTarget = make_unique<tDX::Sprite>(ScreenWidth(), ScreenHeight());
+    m_PSTexture = make_unique<tDX::Sprite>("res/cube.png");
+
     m_scene = make_unique<Scene>("res/cube.obj", (byte4*)m_renderTarget->GetData(), ScreenWidth(), ScreenHeight());
     //m_scene = make_unique<Scene>("res/cornell_box.obj", (byte4*)m_renderTarget->GetData(), ScreenWidth(), ScreenHeight());
     //m_scene = make_unique<Scene>("res/nefertiti.obj", (byte4*)m_renderTarget->GetData(), ScreenWidth(), ScreenHeight());
+
+    m_scene->SetPSTexture((byte4*)m_PSTexture->GetData());
 
     SetDrawTarget(m_renderTarget.get());
 
@@ -58,6 +62,7 @@ public:
 private:
   unique_ptr<Scene> m_scene;
   unique_ptr<tDX::Sprite> m_renderTarget;
+  unique_ptr<tDX::Sprite> m_PSTexture;
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)

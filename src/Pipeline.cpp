@@ -58,7 +58,15 @@ Pipeline::VSOutput Pipeline::VertexShader(const Vertex& vertex)
 
 float4 Pipeline::PixelShader(VSOutput& psinput)
 {
-  return {psinput.uv.y, psinput.uv.x, 0, 1};
+  //return {psinput.uv.y, psinput.uv.x, 0, 1};
+
+  uint16_t texX = (uint16_t)lround(psinput.uv.x * 256);
+  uint16_t texY = (uint16_t)lround((1.0f - psinput.uv.y) * 256);
+
+  byte4 texColor = m_texture0[texY * 256 + texX];
+
+  return {texColor.r / 255.0f, texColor.g / 255.0f, texColor.b / 255.0f, 1.0f};
+
 
   float3 lightColor = {1.0f, 1.0f, 1.0f};
   float3 objectColor = {0.8f, 0.5f, 0.2f};
