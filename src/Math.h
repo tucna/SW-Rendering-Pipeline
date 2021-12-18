@@ -34,6 +34,34 @@ struct Triangle
   Vertex v1, v2, v3;
 };
 
+// Operators
+inline float3 operator-(const float3 &v1) { return { -v1.x, -v1.y, -v1.z }; }
+inline float3 operator-(const float3 &v1, const float3 &v2) { return { v1.x - v2.x, v1.y - v2.y, v1.z - v2.z }; }
+inline float3 operator+(const float3 &v1, const float3 &v2) { return { v1.x + v2.x, v1.y + v2.y, v1.z + v2.z }; }
+inline float3 operator*(float s1, const float3 &v1) { return { v1.x * s1, v1.y * s1, v1.z * s1 }; }
+inline float3 operator*(const float3 &v1, float s1) { return { v1.x * s1, v1.y * s1, v1.z * s1 }; }
+inline float3 operator*(const float3 &v1, const float3 &v2) { return { v1.x * v2.x, v1.y * v2.y, v1.z * v2.z }; }
+
+inline float3& operator+=(float3& v1, const float3& v2)
+{
+  v1.x = v1.x + v2.x;
+  v1.y = v1.y + v2.y;
+  v1.z = v1.z + v2.z;
+
+  return v1;
+}
+
+inline float2& operator-=(float2& v1, const float2& v2)
+{
+  v1.x = v1.x - v2.x;
+  v1.y = v1.y - v2.y;
+
+  return v1;
+}
+
+inline float2 operator+(const float2& v1, const float s1) { return { v1.x + s1, v1.y + s1 }; }
+inline float2 operator+(const float2& v1, const float2& v2) { return { v1.x + v2.x, v1.y + v2.y }; }
+
 // Methods are inlined because I want to include them in headers
 namespace math
 {
@@ -43,6 +71,8 @@ namespace math
   inline float dot(const float3& v1, const float3& v2) { return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z; }
   inline float length(const float3& v1) { return sqrt(v1.x * v1.x + v1.y * v1.y + v1.z * v1.z); }
   inline float saturate(float s) { return s < 0.0f ? 0.0f : s > 1.0f ? 1.0f : s; }
+  inline float3 saturate(const float3& v1) { return { saturate(v1.x), saturate(v1.y), saturate(v1.z) }; }
+  inline float3 reflect(const float3& v1, const float3& v2) { return v1 - 2 * v2 * dot(v1, v2); }
 
   inline float3 cross(const float3& v1, const float3& v2)
   {
@@ -57,21 +87,7 @@ namespace math
   }
 }
 
-// Operators
-inline float3 operator-(const float3 &v1) { return { -v1.x, -v1.y, -v1.z }; }
-inline float3 operator-(const float3 &v1, const float3 &v2) { return {v1.x - v2.x, v1.y - v2.y, v1.z - v2.z}; }
-inline float3 operator+(const float3 &v1, const float3 &v2) { return { v1.x + v2.x, v1.y + v2.y, v1.z + v2.z }; }
-inline float3 operator*(float s1, const float3 &v1) { return { v1.x * s1, v1.y * s1, v1.z * s1 }; }
-
-inline float3& operator+=(float3& v1, const float3& v2)
-{
-  v1.x = v1.x + v2.x;
-  v1.y = v1.y + v2.y;
-  v1.z = v1.z + v2.z;
-
-  return v1;
-}
-
+// More opeartors
 inline float4x4 operator*(const float4x4& m1, const float4x4& m2)
 {
   const float4 row_11 = { m1[0][0], m1[0][1], m1[0][2], m1[0][3] };
@@ -112,14 +128,3 @@ inline float4 operator*(const float4x4& m1, const float4& v1)
 
   return mul;
 }
-
-inline float2& operator-=(float2& v1, const float2& v2)
-{
-  v1.x = v1.x - v2.x;
-  v1.y = v1.y - v2.y;
-
-  return v1;
-}
-
-inline float2 operator+(const float2& v1, const float s1) { return { v1.x + s1, v1.y + s1 }; }
-inline float2 operator+(const float2& v1, const float2& v2) { return { v1.x + v2.x, v1.y + v2.y }; }

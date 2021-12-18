@@ -20,8 +20,8 @@ Scene::Scene(const std::string& pathToModel, byte4* renderTarget, uint16_t scree
 
   size_t bufferSize = m_loader->LoadedMaterials.size() == 0 ? 1 : m_loader->LoadedMaterials.size();
 
-  m_sortedVerticesByMaterial.resize(bufferSize + 1); // Light material
-  m_sortedIndicesByMaterial.resize(bufferSize + 1); // Light material
+  m_sortedVerticesByMaterial.resize(bufferSize/* + 1*/); // Light material
+  m_sortedIndicesByMaterial.resize(bufferSize/* + 1*/); // Light material
 
   for (auto& mesh : m_loader->LoadedMeshes)
   {
@@ -45,6 +45,7 @@ Scene::Scene(const std::string& pathToModel, byte4* renderTarget, uint16_t scree
   }
 
   // TODO light
+  /*
   objl::Material lightMaterial = {};
   lightMaterial.Ka = { 1.0f, 1.0f, 1.0f };
   lightMaterial.Kd = { 1.0f, 1.0f, 1.0f };
@@ -58,6 +59,7 @@ Scene::Scene(const std::string& pathToModel, byte4* renderTarget, uint16_t scree
   m_sortedIndicesByMaterial[m_loader->LoadedMaterials.size() - 1].push_back((uint32_t)m_sortedVerticesByMaterial[0].size() - 3);
   m_sortedIndicesByMaterial[m_loader->LoadedMaterials.size() - 1].push_back((uint32_t)m_sortedVerticesByMaterial[0].size() - 2);
   m_sortedIndicesByMaterial[m_loader->LoadedMaterials.size() - 1].push_back((uint32_t)m_sortedVerticesByMaterial[0].size() - 1);
+  */
 
   PlaceModelToCenter();
 }
@@ -93,12 +95,14 @@ void Scene::Draw()
 
   size_t bufferSize = m_loader->LoadedMaterials.size() == 0 ? 1 : m_loader->LoadedMaterials.size();
 
-  for (size_t materialID = 0; materialID < bufferSize; materialID++)
+  for (size_t materialID = 0; materialID < bufferSize; materialID++) // TODO : -1 for ignoring light triangle
   {
+    /*
     if (materialID == bufferSize - 1) // Light
     {
       m_pipeline->SetVSBuffers(m_mvpLightMatrix, m_viewMatrix, m_modelMatrix);
     }
+    */
 
     m_pipeline->SetIAInput(m_sortedVerticesByMaterial[materialID], m_sortedIndicesByMaterial[materialID]);
 
@@ -116,8 +120,8 @@ void Scene::Draw()
       m_pipeline->SetPSBuffers(
         { 0.8f, 0.8f, 0.8f },
         { 0.1f, 0.1f, 0.1f },
-        { 0.0f, 0.0f, 0.0f },
-        { 0.0f, 0.0f, 0.0f }
+        m_lightTranslation,
+        m_eye
       );
     }
 
@@ -145,7 +149,7 @@ void Scene::PlaceModelToCenter()
   m_translation.y = -(minCoords.y + maxCoords.y) / 2.0f;
   m_translation.z = -(minCoords.z + maxCoords.z) / 2.0f;
 
-  m_eye.z = maxCoords.z + 10.0f;
+  m_eye.z = maxCoords.z + 10.0f; // TODO, orig = 10
 }
 
 void Scene::ComposeMatrices()
@@ -159,7 +163,15 @@ void Scene::ComposeMatrices()
     {{ 0, 0, 0, 1               }},
   } };
 
-  float4x4 m_rotationMatrix =
+  float4x4 m_rotationMatrixX =
+  { {
+    {{ 1 , 0                        , 0                        , 0 }},
+    {{ 0 , cos(toRad(m_rotation.x)) , sin(toRad(m_rotation.x)) , 0 }},
+    {{ 0 , -sin(toRad(m_rotation.x)), cos(toRad(m_rotation.x)) , 0 }},
+    {{ 0 , 0                        , 0                        , 1 }},
+  } };
+
+  float4x4 m_rotationMatrixY =
   { {
     {{ cos(toRad(m_rotation.y)) , 0, -sin(toRad(m_rotation.y)), 0 }},
     {{ 0                        , 1, 0                        , 0 }},
@@ -167,7 +179,7 @@ void Scene::ComposeMatrices()
     {{ 0                        , 0, 0                        , 1 }},
   } };
 
-  m_modelMatrix = m_rotationMatrix * m_translationMatrix;
+  m_modelMatrix = m_rotationMatrixY * m_rotationMatrixX * m_translationMatrix;
 
   float4x4 m_modelLightMatrix =
   { {

@@ -39,11 +39,14 @@ public:
     if (GetKey(tDX::S).bHeld) { m_scene->MoveCamera({ 0, 0, coeficient }); }
     if (GetKey(tDX::E).bHeld) { m_scene->RotateModel({ 0, coeficient * 15, 0 }); }
     if (GetKey(tDX::Q).bHeld) { m_scene->RotateModel({ 0, -coeficient * 15, 0 }); }
+    if (GetKey(tDX::R).bHeld) { m_scene->RotateModel({ coeficient * 15, 0, 0 }); }
+    if (GetKey(tDX::F).bHeld) { m_scene->RotateModel({ -coeficient * 15, 0, 0 }); }
     if (GetKey(tDX::NP6).bHeld) { m_scene->MoveLight({ coeficient, 0, 0 }); }
     if (GetKey(tDX::NP4).bHeld) { m_scene->MoveLight({ -coeficient, 0, 0 }); }
     if (GetKey(tDX::NP5).bHeld) { m_scene->MoveLight({ 0, -coeficient, 0 }); }
     if (GetKey(tDX::NP8).bHeld) { m_scene->MoveLight({ 0, coeficient, 0 }); }
-
+    if (GetKey(tDX::NP7).bHeld) { m_scene->MoveLight({ 0, 0, -coeficient }); }
+    if (GetKey(tDX::NP9).bHeld) { m_scene->MoveLight({ 0, 0, coeficient }); }
 
     m_scene->ComposeMatrices();
     m_scene->Draw();

@@ -56,7 +56,32 @@ Pipeline::VSOutput Pipeline::VertexShader(const Vertex& vertex)
 
 float4 Pipeline::PixelShader(VSOutput& psinput)
 {
+  float3 lightColor = {1.0f, 1.0f, 1.0f};
+  float3 objectColor = {0.8f, 0.5f, 0.2f};
+
+  float ambientStrength = 0.1f;
+  float3 ambient = ambientStrength * lightColor;
+
+  float3 normal = normalize(psinput.normal);
   float3 lightDir = normalize(m_lightPosition - psinput.worldPosition);
+
+  float diff = max(dot(normal, lightDir), 0.0f);
+  float3 diffuse = diff * lightColor;
+
+  float specularStrength = 0.5f;
+  float3 viewDir = normalize(m_cameraPosition - psinput.worldPosition);
+  float3 reflectDir = reflect(-lightDir, normal);
+  float spec = pow(max(dot(viewDir, reflectDir), 0.0f), 32);
+  float3 specular = specularStrength * spec * lightColor;
+
+  float3 result = saturate((ambient + diffuse + specular)) * objectColor;
+  return float4(result, 1.0f);
+
+  /*
+  float3 lightDir = normalize(m_lightPosition - psinput.worldPosition);
+  float3 viewDir = normalize(m_cameraPosition - psinput.worldPosition);
+  float3 halfwayDir = normalize(lightDir + viewDir);
+
   float3 n = normalize(psinput.normal);
 
   // Diffuse
@@ -66,16 +91,18 @@ float4 Pipeline::PixelShader(VSOutput& psinput)
   diffuse *= ((length(lightDir) * length(lightDir)) / dot(m_lightPosition - psinput.worldPosition, m_lightPosition - psinput.worldPosition));
 
   // Specular
-  float3 h = normalize(normalize(m_cameraPosition - psinput.worldPosition) - lightDir);
-  float specular = pow(saturate(dot(h, n)), 2.0f);
+  //float3 h = normalize(normalize(m_cameraPosition - psinput.worldPosition) - lightDir);
+  //float specular = pow(saturate(dot(h, n)), 2.0f);
+  float specular = pow(max(dot(n, halfwayDir), 0.0f), 2.0f);
 
   float4 color;
-  color.r = saturate(m_Ka.x + (m_Kd.x * diffuse * 0.6f));// + (specular * 0.5f));
-  color.g = saturate(m_Ka.y + (m_Kd.y * diffuse * 0.6f));// + (specular * 0.5f));
-  color.b = saturate(m_Ka.z + (m_Kd.z * diffuse * 0.6f));// + (specular * 0.5f));
+  color.r = saturate(m_Ka.x + (m_Kd.x * diffuse * 0.6f) + (specular * 0.5f));
+  color.g = saturate(m_Ka.y + (m_Kd.y * diffuse * 0.6f) + (specular * 0.5f));
+  color.b = saturate(m_Ka.z + (m_Kd.z * diffuse * 0.6f) + (specular * 0.5f));
   color.a = 1.0f;
 
   return color;
+  */
 }
 
 void Pipeline::PostVertexShader(VSOutput& vsoutput)
