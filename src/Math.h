@@ -63,6 +63,7 @@ inline float2& operator-=(float2& v1, const float2& v2)
 inline float2 operator+(const float2& v1, const float s1) { return { v1.x + s1, v1.y + s1 }; }
 inline float2 operator+(const float2& v1, const float2& v2) { return { v1.x + v2.x, v1.y + v2.y }; }
 inline float2 operator*(float s1, const float2 &v1) { return { v1.x * s1, v1.y * s1 }; }
+inline float2 operator/(const float2& v1, const float s1) { return { v1.x / s1, v1.y / s1 }; }
 
 // Methods are inlined because I want to include them in headers
 namespace math

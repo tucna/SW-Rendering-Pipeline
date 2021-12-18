@@ -187,6 +187,21 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
   maxY = std::clamp(maxY, 0, m_viewportHeight - 1);
   minY = std::clamp(minY, 0, m_viewportHeight - 1);
 
+  // Perspective correct interpolation
+  triangle.v1.uv = triangle.v1.uv / triangle.v1.position.w;
+  triangle.v2.uv = triangle.v2.uv / triangle.v2.position.w;
+  triangle.v3.uv = triangle.v3.uv / triangle.v3.position.w;
+
+  triangle.v1.position.w = 1.0f / triangle.v1.position.w;
+  triangle.v2.position.w = 1.0f / triangle.v2.position.w;
+  triangle.v3.position.w = 1.0f / triangle.v3.position.w;
+
+  /*
+  v1.z = 1.0f / v1.z;
+  v2.z = 1.0f / v2.z;
+  v3.z = 1.0f / v3.z;
+  */
+
   for (uint16_t x = minX; x <= maxX; x++)
   {
     for (uint16_t y = minY; y <= maxY; y++)
@@ -210,7 +225,11 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
         vertex.position = { (float)x, (float)y, z, z }; // TODO second "z" is not correct - 1/z instead?
         vertex.worldPosition = w1 * triangle.v1.worldPosition + w2 * triangle.v2.worldPosition + w3 * triangle.v3.worldPosition;
         vertex.normal = w1 * triangle.v1.normal + w2 * triangle.v2.normal + w3 * triangle.v3.normal;
+        //vertex.uv = w1 * triangle.v1.uv + w2 * triangle.v2.uv + w3 * triangle.v3.uv; TODO
+        float Tz = 1 / (w1 * triangle.v1.position.w + w2 * triangle.v2.position.w + w3 * triangle.v3.position.w);
         vertex.uv = w1 * triangle.v1.uv + w2 * triangle.v2.uv + w3 * triangle.v3.uv;
+        vertex.uv.x = vertex.uv.x * Tz;
+        vertex.uv.y = vertex.uv.y * Tz;
 
         float4 color = PixelShader(vertex);
         OutputMerger(x, y, color);
