@@ -114,17 +114,19 @@ void Scene::Draw()
         { m_loader->LoadedMaterials[materialID].Ka.X, m_loader->LoadedMaterials[materialID].Ka.Y, m_loader->LoadedMaterials[materialID].Ka.Z },
         m_lightTranslation,
         m_eye,
-        m_PSTexture
+        m_PSTexture,
+        256
       );
     }
     else
     {
       m_pipeline->SetPSBuffers(
-        { 0.8f, 0.8f, 0.8f },
+        { 0.8f, 0.5f, 0.2f },
         { 0.1f, 0.1f, 0.1f },
         m_lightTranslation,
         m_eye,
-        m_PSTexture
+        m_PSTexture,
+        256
       );
     }
 
@@ -152,7 +154,7 @@ void Scene::PlaceModelToCenter()
   m_translation.y = -(minCoords.y + maxCoords.y) / 2.0f;
   m_translation.z = -(minCoords.z + maxCoords.z) / 2.0f;
 
-  m_eye.z = maxCoords.z + 2.0f; // TODO, orig = 10
+  m_eye.z = maxCoords.z + 10.0f;
   m_lightTranslation = { 0, 0, m_eye.z };
 }
 

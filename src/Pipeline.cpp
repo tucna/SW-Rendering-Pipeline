@@ -58,16 +58,18 @@ Pipeline::VSOutput Pipeline::VertexShader(const Vertex& vertex)
 
 float4 Pipeline::PixelShader(VSOutput& psinput)
 {
-  uint16_t texX = (uint16_t)lround(psinput.uv.x * 256);
-  uint16_t texY = (uint16_t)lround((1.0f - psinput.uv.y) * 256);
+  float3 objectColor = m_Kd;
+  float3 lightColor = { 1.0f, 1.0f, 1.0f };
 
-  byte4 texColor = m_texture0[texY * 256 + texX];
+  if (m_texture0)
+  {
+    uint16_t texX = (uint16_t)lround(psinput.uv.x * m_texture0size);
+    uint16_t texY = (uint16_t)lround((1.0f - psinput.uv.y) * m_texture0size);
 
-  //return {texColor.r / 255.0f, texColor.g / 255.0f, texColor.b / 255.0f, 1.0f};
+    byte4 texColor = m_texture0[texY * m_texture0size + texX];
 
-
-  float3 lightColor = {1.0f, 1.0f, 1.0f};
-  float3 objectColor = { texColor.r / 255.0f, texColor.g / 255.0f, texColor.b / 255.0f }; //{0.8f, 0.5f, 0.2f};
+    objectColor = { texColor.r / 255.0f, texColor.g / 255.0f, texColor.b / 255.0f };
+  }
 
   float ambientStrength = 0.1f;
   float3 ambient = ambientStrength * lightColor;
@@ -120,8 +122,13 @@ void Pipeline::PostVertexShader(VSOutput& vsoutput)
   // Transform to NDC
   float invW = 1.0f / vsoutput.position.w;
 
-  vsoutput.position.x *= invW;
-  vsoutput.position.y *= invW;
+  // Everything from vsoutput must be processed
+  vsoutput.position *= invW;
+  vsoutput.normal *= invW;
+  vsoutput.uv *= invW;
+  vsoutput.worldPosition *= invW;
+
+  // TODO: is this correct?
   vsoutput.position.z = invW;
 }
 
@@ -186,6 +193,7 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
   minY = std::clamp(minY, 0, m_viewportHeight - 1);
 
   // Perspective correct interpolation
+  /*
   triangle.v1.uv = triangle.v1.uv / triangle.v1.position.w;
   triangle.v2.uv = triangle.v2.uv / triangle.v2.position.w;
   triangle.v3.uv = triangle.v3.uv / triangle.v3.position.w;
@@ -193,6 +201,7 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
   triangle.v1.position.w = 1.0f / triangle.v1.position.w;
   triangle.v2.position.w = 1.0f / triangle.v2.position.w;
   triangle.v3.position.w = 1.0f / triangle.v3.position.w;
+  */
 
   for (uint16_t x = minX; x <= maxX; x++)
   {
@@ -208,6 +217,7 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
         continue;
 
       float z = w1 * v1.z + w2 * v2.z + w3 * v3.z;
+      float invZ = 1.0f / z;
 
       if (z > m_depthBuffer[y * m_buffersWidth + x])
       {
@@ -215,13 +225,14 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
 
         VSOutput vertex;
         vertex.position = { (float)x, (float)y, z, z }; // TODO second "z" is not correct - 1/z instead?
+
         vertex.worldPosition = w1 * triangle.v1.worldPosition + w2 * triangle.v2.worldPosition + w3 * triangle.v3.worldPosition;
         vertex.normal = w1 * triangle.v1.normal + w2 * triangle.v2.normal + w3 * triangle.v3.normal;
         vertex.uv = w1 * triangle.v1.uv + w2 * triangle.v2.uv + w3 * triangle.v3.uv;
 
-        float w = 1 / (w1 * triangle.v1.position.w + w2 * triangle.v2.position.w + w3 * triangle.v3.position.w);
-        vertex.uv.x = vertex.uv.x * w;
-        vertex.uv.y = vertex.uv.y * w;
+        vertex.worldPosition *= invZ;
+        vertex.normal *= invZ;
+        vertex.uv *= invZ;
 
         float4 color = PixelShader(vertex);
         OutputMerger(x, y, color);

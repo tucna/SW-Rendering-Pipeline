@@ -22,7 +22,7 @@ public:
   void SetIAInput(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices) { m_vertices = &vertices; m_indices = &indices; }
   void SetVSBuffers(float4x4 mvpMatrix, float4x4 viewMatrix, float4x4 modelMatrix) { m_mvpMatrix = mvpMatrix; m_viewMatrix = viewMatrix; m_modelMatrix = modelMatrix; }
   void SetRSDescriptor(uint16_t viewportWidth, uint16_t viewportHeight, Culling culling) { m_viewportWidth = viewportWidth; m_viewportHeight = viewportHeight; m_culling = culling; }
-  void SetPSBuffers(float3 Kd, float3 Ka, float3 lightPosition, float3 cameraPosition, byte4* texture0) { m_Kd = Kd; m_Ka = Ka; m_lightPosition = lightPosition; m_cameraPosition = cameraPosition; m_texture0 = texture0; }
+  void SetPSBuffers(float3 Kd, float3 Ka, float3 lightPosition, float3 cameraPosition, byte4* texture0, uint16_t texture0size) { m_Kd = Kd; m_Ka = Ka; m_lightPosition = lightPosition; m_cameraPosition = cameraPosition; m_texture0 = texture0; m_texture0size = texture0size; }
   void SetOMBuffers(float* depthBuffer, byte4* renderTarget, uint16_t buffersWidth, uint16_t buffersHeight) { m_depthBuffer = depthBuffer; m_renderTarget = renderTarget; m_buffersWidth = buffersWidth; m_buffersHeight = buffersHeight; }
 
   void ClearDepthBuffer();
@@ -76,6 +76,7 @@ private:
   float3 m_lightPosition;
   float3 m_cameraPosition;
   byte4* m_texture0 = nullptr;
+  uint16_t m_texture0size;
 
   // OM
   float* m_depthBuffer = nullptr;
