@@ -8,7 +8,7 @@ using namespace math;
 void Pipeline::ClearDepthBuffer()
 {
   for (size_t i = 0; i < m_buffersWidth * m_buffersHeight; i++)
-    m_depthBuffer[i] = std::numeric_limits<float>::min();
+    m_depthBuffer[i] = std::numeric_limits<float>::infinity();
 }
 
 void Pipeline::Draw()
@@ -88,33 +88,6 @@ float4 Pipeline::PixelShader(VSOutput& psinput)
 
   float3 result = saturate((ambient + diffuse + specular)) * objectColor;
   return float4(result, 1.0f);
-
-  /*
-  float3 lightDir = normalize(m_lightPosition - psinput.worldPosition);
-  float3 viewDir = normalize(m_cameraPosition - psinput.worldPosition);
-  float3 halfwayDir = normalize(lightDir + viewDir);
-
-  float3 n = normalize(psinput.normal);
-
-  // Diffuse
-  float diffuse = saturate(dot(n, lightDir));
-
-  // Fall-off
-  diffuse *= ((length(lightDir) * length(lightDir)) / dot(m_lightPosition - psinput.worldPosition, m_lightPosition - psinput.worldPosition));
-
-  // Specular
-  //float3 h = normalize(normalize(m_cameraPosition - psinput.worldPosition) - lightDir);
-  //float specular = pow(saturate(dot(h, n)), 2.0f);
-  float specular = pow(max(dot(n, halfwayDir), 0.0f), 2.0f);
-
-  float4 color;
-  color.r = saturate(m_Ka.x + (m_Kd.x * diffuse * 0.6f) + (specular * 0.5f));
-  color.g = saturate(m_Ka.y + (m_Kd.y * diffuse * 0.6f) + (specular * 0.5f));
-  color.b = saturate(m_Ka.z + (m_Kd.z * diffuse * 0.6f) + (specular * 0.5f));
-  color.a = 1.0f;
-
-  return color;
-  */
 }
 
 void Pipeline::PostVertexShader(VSOutput& vsoutput)
@@ -122,14 +95,13 @@ void Pipeline::PostVertexShader(VSOutput& vsoutput)
   // Transform to NDC
   float invW = 1.0f / vsoutput.position.w;
 
-  // Everything from vsoutput must be processed
+  // Everything from vsoutput must be processed TODO: template?
   vsoutput.position *= invW;
   vsoutput.normal *= invW;
   vsoutput.uv *= invW;
   vsoutput.worldPosition *= invW;
 
-  // TODO: is this correct?
-  vsoutput.position.z = invW;
+  vsoutput.position.w = invW;
 }
 
 void Pipeline::PrimitiveAssembly()
@@ -192,17 +164,6 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
   maxY = std::clamp(maxY, 0, m_viewportHeight - 1);
   minY = std::clamp(minY, 0, m_viewportHeight - 1);
 
-  // Perspective correct interpolation
-  /*
-  triangle.v1.uv = triangle.v1.uv / triangle.v1.position.w;
-  triangle.v2.uv = triangle.v2.uv / triangle.v2.position.w;
-  triangle.v3.uv = triangle.v3.uv / triangle.v3.position.w;
-
-  triangle.v1.position.w = 1.0f / triangle.v1.position.w;
-  triangle.v2.position.w = 1.0f / triangle.v2.position.w;
-  triangle.v3.position.w = 1.0f / triangle.v3.position.w;
-  */
-
   for (uint16_t x = minX; x <= maxX; x++)
   {
     for (uint16_t y = minY; y <= maxY; y++)
@@ -217,22 +178,24 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
         continue;
 
       float z = w1 * v1.z + w2 * v2.z + w3 * v3.z;
-      float invZ = 1.0f / z;
 
-      if (z > m_depthBuffer[y * m_buffersWidth + x])
+      if (z < m_depthBuffer[y * m_buffersWidth + x])
       {
         m_depthBuffer[y * m_buffersWidth + x] = z;
 
+        float w = w1 * triangle.v1.position.w + w2 * triangle.v2.position.w + w3 * triangle.v3.position.w;
+        float invW = 1.0f / w;
+
         VSOutput vertex;
-        vertex.position = { (float)x, (float)y, z, z }; // TODO second "z" is not correct - 1/z instead?
+        vertex.position = { (float)x, (float)y, z, w };
 
         vertex.worldPosition = w1 * triangle.v1.worldPosition + w2 * triangle.v2.worldPosition + w3 * triangle.v3.worldPosition;
         vertex.normal = w1 * triangle.v1.normal + w2 * triangle.v2.normal + w3 * triangle.v3.normal;
         vertex.uv = w1 * triangle.v1.uv + w2 * triangle.v2.uv + w3 * triangle.v3.uv;
 
-        vertex.worldPosition *= invZ;
-        vertex.normal *= invZ;
-        vertex.uv *= invZ;
+        vertex.worldPosition *= invW;
+        vertex.normal *= invW;
+        vertex.uv *= invW;
 
         float4 color = PixelShader(vertex);
         OutputMerger(x, y, color);
