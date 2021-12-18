@@ -153,6 +153,48 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
   if ((m_culling == Culling::CW && area < 0.0f) || (m_culling == Culling::CCW && area > 0.0f))
     return;
 
+  auto Process = [&](uint16_t minX, uint16_t maxX, uint16_t minY, uint16_t maxY)
+  {
+    for (uint16_t x = minX; x <= maxX; x++)
+    {
+      for (uint16_t y = minY; y <= maxY; y++)
+      {
+        // Barycentric interpolation
+        float3 p = {x + 0.5f, y + 0.5f, 0.0f};
+        float w1 = EdgeFunction(v2, v3, p) / area;
+        float w2 = EdgeFunction(v3, v1, p) / area;
+        float w3 = EdgeFunction(v1, v2, p) / area;
+
+        if (w1 < 0 || w2 < 0 || w3 < 0)
+          continue;
+
+        float z = w1 * v1.z + w2 * v2.z + w3 * v3.z;
+
+        if (z < m_depthBuffer[y * m_buffersWidth + x])
+        {
+          m_depthBuffer[y * m_buffersWidth + x] = z;
+
+          float w = w1 * triangle.v1.position.w + w2 * triangle.v2.position.w + w3 * triangle.v3.position.w;
+          float invW = 1.0f / w;
+
+          VSOutput vertex;
+          vertex.position = { (float)x, (float)y, z, w };
+
+          vertex.worldPosition = w1 * triangle.v1.worldPosition + w2 * triangle.v2.worldPosition + w3 * triangle.v3.worldPosition;
+          vertex.normal = w1 * triangle.v1.normal + w2 * triangle.v2.normal + w3 * triangle.v3.normal;
+          vertex.uv = w1 * triangle.v1.uv + w2 * triangle.v2.uv + w3 * triangle.v3.uv;
+
+          vertex.worldPosition *= invW;
+          vertex.normal *= invW;
+          vertex.uv *= invW;
+
+          float4 color = PixelShader(vertex);
+          OutputMerger(x, y, color);
+        }
+      }
+    }
+  };
+
   // Get the bounding box of the triangle
   int maxX = lround(std::max(v1.x, std::max(v2.x, v3.x)));
   int minX = lround(std::min(v1.x, std::min(v2.x, v3.x)));
@@ -164,44 +206,22 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
   maxY = std::clamp(maxY, 0, m_viewportHeight - 1);
   minY = std::clamp(minY, 0, m_viewportHeight - 1);
 
-  for (uint16_t x = minX; x <= maxX; x++)
-  {
-    for (uint16_t y = minY; y <= maxY; y++)
-    {
-      // Barycentric interpolation
-      float3 p = {x + 0.5f, y + 0.5f, 0.0f};
-      float w1 = EdgeFunction(v2, v3, p) / area;
-      float w2 = EdgeFunction(v3, v1, p) / area;
-      float w3 = EdgeFunction(v1, v2, p) / area;
+  Process(minX, maxX, minY, maxY);
 
-      if (w1 < 0 || w2 < 0 || w3 < 0)
-        continue;
+  /*
+  uint16_t halfX = (maxX - minX) / 2;
+  uint16_t halfY = (maxY - minY) / 2;
 
-      float z = w1 * v1.z + w2 * v2.z + w3 * v3.z;
+  m_threads.push_back(thread(Process, minX, minX + halfX, minY, minY + halfY));
+  m_threads.push_back(thread(Process, minX + halfX + 1, maxX, minY, minY + halfY));
+  m_threads.push_back(thread(Process, minX, minX + halfX, minY + halfY + 1, maxY));
+  m_threads.push_back(thread(Process, minX + halfX, maxX, minY + halfY + 1, maxY));
 
-      if (z < m_depthBuffer[y * m_buffersWidth + x])
-      {
-        m_depthBuffer[y * m_buffersWidth + x] = z;
+  for (auto& t : m_threads)
+    t.join();
 
-        float w = w1 * triangle.v1.position.w + w2 * triangle.v2.position.w + w3 * triangle.v3.position.w;
-        float invW = 1.0f / w;
-
-        VSOutput vertex;
-        vertex.position = { (float)x, (float)y, z, w };
-
-        vertex.worldPosition = w1 * triangle.v1.worldPosition + w2 * triangle.v2.worldPosition + w3 * triangle.v3.worldPosition;
-        vertex.normal = w1 * triangle.v1.normal + w2 * triangle.v2.normal + w3 * triangle.v3.normal;
-        vertex.uv = w1 * triangle.v1.uv + w2 * triangle.v2.uv + w3 * triangle.v3.uv;
-
-        vertex.worldPosition *= invW;
-        vertex.normal *= invW;
-        vertex.uv *= invW;
-
-        float4 color = PixelShader(vertex);
-        OutputMerger(x, y, color);
-      }
-    }
-  }
+  m_threads.clear();
+  */
 }
 
 void Pipeline::OutputMerger(uint16_t x, uint16_t y, float4 color)

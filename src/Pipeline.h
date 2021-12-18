@@ -83,5 +83,7 @@ private:
   byte4* m_renderTarget = nullptr;
   uint16_t m_buffersWidth;
   uint16_t m_buffersHeight;
+
+  //std::vector<std::thread> m_threads;
 };
 
