@@ -19,7 +19,8 @@ public:
   bool OnUserCreate() override
   {
     m_renderTarget = make_unique<tDX::Sprite>(ScreenWidth(), ScreenHeight());
-    m_scene = make_unique<Scene>("res/cornell_box.obj", (byte4*)m_renderTarget->GetData(), ScreenWidth(), ScreenHeight());
+    m_scene = make_unique<Scene>("res/cube.obj", (byte4*)m_renderTarget->GetData(), ScreenWidth(), ScreenHeight());
+    //m_scene = make_unique<Scene>("res/cornell_box.obj", (byte4*)m_renderTarget->GetData(), ScreenWidth(), ScreenHeight());
     //m_scene = make_unique<Scene>("res/nefertiti.obj", (byte4*)m_renderTarget->GetData(), ScreenWidth(), ScreenHeight());
 
     SetDrawTarget(m_renderTarget.get());

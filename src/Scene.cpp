@@ -149,7 +149,8 @@ void Scene::PlaceModelToCenter()
   m_translation.y = -(minCoords.y + maxCoords.y) / 2.0f;
   m_translation.z = -(minCoords.z + maxCoords.z) / 2.0f;
 
-  m_eye.z = maxCoords.z + 10.0f; // TODO, orig = 10
+  m_eye.z = maxCoords.z + 2.0f; // TODO, orig = 10
+  m_lightTranslation = { 0, 0, m_eye.z };
 }
 
 void Scene::ComposeMatrices()
