@@ -45,7 +45,7 @@ Scene::Scene(const std::string& pathToModel, byte4* renderTarget, uint16_t scree
     }
   }
 
-  // TODO light
+  // TODO Light debug triangle shall be nicer
   /*
   objl::Material lightMaterial = {};
   lightMaterial.Ka = { 1.0f, 1.0f, 1.0f };
@@ -96,9 +96,9 @@ void Scene::Draw()
 
   size_t bufferSize = m_loader->LoadedMaterials.size() == 0 ? 1 : m_loader->LoadedMaterials.size();
 
-  for (size_t materialID = 0; materialID < bufferSize; materialID++) // TODO : -1 for ignoring light triangle
+  for (size_t materialID = 0; materialID < bufferSize; materialID++)
   {
-    /*
+    /* Ignoring debug lights for now
     if (materialID == bufferSize - 1) // Light
     {
       m_pipeline->SetVSBuffers(m_mvpLightMatrix, m_viewMatrix, m_modelMatrix);

@@ -208,7 +208,7 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
 
   Process(minX, maxX, minY, maxY);
 
-  /*
+  /* Threads tested
   uint16_t halfX = (maxX - minX) / 2;
   uint16_t halfY = (maxY - minY) / 2;
 
