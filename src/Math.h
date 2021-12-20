@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <memory>
 
 // Methods are inlined because I want to include them in headers
 namespace math
@@ -26,6 +27,13 @@ struct float4
 };
 
 struct byte4 { uint8_t r, g, b, a; };
+
+struct MaterialTextures
+{
+  byte4* Kd_map;
+  uint16_t texturesWidth;
+  uint16_t texturesHeight;
+};
 
 struct Vertex
 {

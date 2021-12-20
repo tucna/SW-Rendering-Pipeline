@@ -61,12 +61,12 @@ float4 Pipeline::PixelShader(VSOutput& psinput)
   float3 objectColor = m_Kd;
   float3 lightColor = { 1.0f, 1.0f, 1.0f };
 
-  if (m_texture0)
+  if (m_materialTextures->Kd_map)
   {
-    uint16_t texX = (uint16_t)lround(psinput.uv.x * m_texture0size);
-    uint16_t texY = (uint16_t)lround((1.0f - psinput.uv.y) * m_texture0size);
+    uint16_t texX = (uint16_t)lround(psinput.uv.x * m_materialTextures->texturesWidth);
+    uint16_t texY = (uint16_t)lround((1.0f - psinput.uv.y) * m_materialTextures->texturesHeight);
 
-    byte4 texColor = m_texture0[texY * m_texture0size + texX];
+    byte4 texColor = m_materialTextures->Kd_map[texY * m_materialTextures->texturesWidth + texX];
 
     objectColor = { texColor.r / 255.0f, texColor.g / 255.0f, texColor.b / 255.0f };
   }

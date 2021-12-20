@@ -27,7 +27,20 @@ public:
     m_aspectRatio = (float)m_screenWidth / (float)m_screenHeight;
 
     m_loader = make_unique<objl::Loader>();
-    m_loader->LoadFile("res/cornell_box.obj");
+    //m_loader->LoadFile("res/cornell_box.obj");
+    m_loader->LoadFile("res/cube.obj");
+
+    m_PSTexturesSprites.resize(m_loader->LoadedMaterials.size());
+
+    for (size_t materialID = 0; materialID < m_PSTexturesSprites.size(); materialID++)
+    {
+      if (m_loader->LoadedMaterials[materialID].map_Kd.size() > 0)
+        m_PSTexturesSprites[materialID].push_back(make_unique<tDX::Sprite>("res/" + m_loader->LoadedMaterials[materialID].map_Kd));
+    };
+
+    //m_PSTexture = make_unique<tDX::Sprite>("res/cube.png");
+    //SetPSTexture((byte4*)m_PSTexture->GetData());
+
 
     // TODO
     m_depthBuffer = new float[m_screenWidth * m_screenHeight];
@@ -143,6 +156,9 @@ public:
         m_pipeline->SetVSBuffers(m_mvpLightMatrix, m_viewMatrix, m_modelMatrix);
       }
       */
+      m_materialTextures.Kd_map = (byte4*)m_PSTexturesSprites[materialID][0]->GetData();
+      m_materialTextures.texturesHeight = m_PSTexturesSprites[materialID][0]->height;
+      m_materialTextures.texturesWidth = m_PSTexturesSprites[materialID][0]->width;
 
       m_pipeline->SetIAInput(m_sortedVerticesByMaterial[materialID], m_sortedIndicesByMaterial[materialID]);
 
@@ -153,8 +169,7 @@ public:
           { m_loader->LoadedMaterials[materialID].Ka.X, m_loader->LoadedMaterials[materialID].Ka.Y, m_loader->LoadedMaterials[materialID].Ka.Z },
           m_lightTranslation,
           m_eye,
-          m_PSTexture,
-          256
+          &m_materialTextures
         );
       }
       else
@@ -164,8 +179,7 @@ public:
           { 0.1f, 0.1f, 0.1f },
           m_lightTranslation,
           m_eye,
-          m_PSTexture,
-          256
+          &m_materialTextures
         );
       }
 
@@ -271,7 +285,8 @@ public:
 
 private:
   unique_ptr<tDX::Sprite> m_renderTarget;
-  //unique_ptr<tDX::Sprite> m_PSTexture;
+
+  vector<vector<unique_ptr<tDX::Sprite>>> m_PSTexturesSprites;
 
   std::unique_ptr<objl::Loader> m_loader;
   std::unique_ptr<Pipeline> m_pipeline;
@@ -295,16 +310,16 @@ private:
   float3 m_target = { 0, 0, -1 };
   float3 m_up = { 0, 1, 0 };
 
-  byte4* m_PSTexture;
-
   std::vector<std::vector<Vertex>> m_sortedVerticesByMaterial;
-  std::vector< std::vector<uint32_t>> m_sortedIndicesByMaterial;
+  std::vector<std::vector<uint32_t>> m_sortedIndicesByMaterial;
 
   float* m_depthBuffer;
   float m_aspectRatio;
 
   uint16_t m_screenWidth;
   uint16_t m_screenHeight;
+
+  MaterialTextures m_materialTextures;
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
