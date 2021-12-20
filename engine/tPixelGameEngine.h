@@ -381,12 +381,6 @@ namespace tDX // tucna - DirectX
     std::string sAppName;
 
   private: // Inner mysterious workings
-    struct Vertex
-    {
-      DirectX::XMFLOAT3 position;
-      DirectX::XMFLOAT2 texCoord;
-    };
-
     Sprite		*pDefaultDrawTarget = nullptr;
     Sprite		*pDrawTarget = nullptr;
     Pixel::Mode	nPixelMode = Pixel::Mode::NORMAL;
@@ -979,6 +973,12 @@ namespace tDX
     }
 
     // Vertices
+    struct Vertex
+    {
+      DirectX::XMFLOAT3 position;
+      DirectX::XMFLOAT2 texCoord;
+    };
+
     std::vector<Vertex> m_vertices;
 
     m_vertices.push_back({ {-1, -1, 0}, {0, 1} });

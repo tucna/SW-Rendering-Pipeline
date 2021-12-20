@@ -128,13 +128,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\Pipeline.cpp" />
-    <ClCompile Include="src\Scene.cpp" />
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\tPixelGameEngine.h" />
     <ClInclude Include="src\Pipeline.h" />
-    <ClInclude Include="src\Scene.h" />
     <ClInclude Include="src\Math.h" />
     <ClInclude Include="src\OBJ_Loader.h" />
   </ItemGroup>
