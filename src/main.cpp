@@ -5,6 +5,7 @@
 #include "Math.h"
 #include "Pipeline.h"
 
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <vector>
@@ -28,18 +29,17 @@ public:
 
     m_loader = make_unique<objl::Loader>();
     //m_loader->LoadFile("res/cornell_box.obj");
-    m_loader->LoadFile("res/cube.obj");
+
+    string directory = "nanosuit";
+    m_loader->LoadFile(ReturnObjPath(directory));
 
     m_PSTexturesSprites.resize(m_loader->LoadedMaterials.size());
 
     for (size_t materialID = 0; materialID < m_PSTexturesSprites.size(); materialID++)
     {
       if (m_loader->LoadedMaterials[materialID].map_Kd.size() > 0)
-        m_PSTexturesSprites[materialID].push_back(make_unique<tDX::Sprite>("res/" + m_loader->LoadedMaterials[materialID].map_Kd));
+        m_PSTexturesSprites[materialID].push_back(make_unique<tDX::Sprite>("res/" + directory + "/" + m_loader->LoadedMaterials[materialID].map_Kd));
     };
-
-    //m_PSTexture = make_unique<tDX::Sprite>("res/cube.png");
-    //SetPSTexture((byte4*)m_PSTexture->GetData());
 
 
     // TODO
@@ -137,6 +137,19 @@ public:
   void MoveLight(float3 translation) { m_lightTranslation += translation; }
   void RotateModel(float3 rotation) { m_rotation += rotation; }
 
+  string ReturnObjPath(const string& directory)
+  {
+    string path = "res/" + directory + "/";
+
+    for (const auto& file : filesystem::directory_iterator(path))
+    {
+      if (file.path().extension() == ".obj")
+        return file.path().string();
+    }
+
+    return "";
+  }
+
   void Draw()
   {
     // Set pipeline
@@ -156,11 +169,12 @@ public:
         m_pipeline->SetVSBuffers(m_mvpLightMatrix, m_viewMatrix, m_modelMatrix);
       }
       */
+
+      m_pipeline->SetIAInput(m_sortedVerticesByMaterial[materialID], m_sortedIndicesByMaterial[materialID]);
+
       m_materialTextures.Kd_map = (byte4*)m_PSTexturesSprites[materialID][0]->GetData();
       m_materialTextures.texturesHeight = m_PSTexturesSprites[materialID][0]->height;
       m_materialTextures.texturesWidth = m_PSTexturesSprites[materialID][0]->width;
-
-      m_pipeline->SetIAInput(m_sortedVerticesByMaterial[materialID], m_sortedIndicesByMaterial[materialID]);
 
       if (bufferSize > 1)
       {
