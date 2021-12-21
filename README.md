@@ -26,7 +26,7 @@ Graphics rendering pipeline without any external graphical dependencies running 
 - Texture mapping.
 - Z-buffering and depth buffer handling.
 - Render to texture.
-- Rendering process emulating standart GPU pipeline.
+- Rendering process emulating standard GPU pipeline.
 
 # Additional information
 The project is built on [tPixelGameEngine](https://github.com/tucna/tPixelGameEngine) for basic window handling. 
