@@ -31,7 +31,7 @@ public:
     m_pipeline = make_unique<Pipeline>();
     m_loader = make_unique<objl::Loader>();
 
-    string directory = "cornell";
+    string directory = "mars";
     m_loader->LoadFile(ReturnObjPath(directory));
 
     m_depthBuffer = new float[m_screenWidth * m_screenHeight];

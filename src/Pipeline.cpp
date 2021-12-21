@@ -58,10 +58,11 @@ Pipeline::VSOutput Pipeline::VertexShader(const Vertex& vertex)
 
 float4 Pipeline::PixelShader(VSOutput& psinput)
 {
-  // TODO: correct handling of Kd, Ka, Ks
+  const float3 lightAmbient  = { 0.2f, 0.2f, 0.2f };
+  const float3 lightDiffuse  = { 0.5f, 0.5f, 0.5f };
+  const float3 lightSpecular = { 1.0f, 1.0f, 1.0f };
 
   float3 objectColor = { 1.0f, 1.0f, 1.0f };
-  float3 lightColor = { 1.0f, 1.0f, 1.0f };
 
   if (m_materialTextures->Kd_map)
   {
@@ -73,21 +74,21 @@ float4 Pipeline::PixelShader(VSOutput& psinput)
     objectColor = float3({texColor.r / 255.0f, texColor.g / 255.0f, texColor.b / 255.0f});
   }
 
-  float3 ambient = 0.1f * lightColor;
+  float3 ambient = m_Ka * lightAmbient;
 
   float3 normal = normalize(psinput.normal);
   float3 lightDir = normalize(m_lightPosition - psinput.worldPosition);
 
   float diff = max(dot(normal, lightDir), 0.0f);
-  float3 diffuse = diff * lightColor;
+  float3 diffuse = m_Kd * diff * lightDiffuse;
 
   float specularStrength = 0.5f;
   float3 viewDir = normalize(m_cameraPosition - psinput.worldPosition);
   float3 reflectDir = reflect(-lightDir, normal);
   float spec = pow(max(dot(viewDir, reflectDir), 0.0f), 32);
-  float3 specular = specularStrength * spec * lightColor;
+  float3 specular = specularStrength * spec * lightSpecular;
 
-  float3 result = saturate((ambient + m_Kd * diffuse + specular)) * objectColor;
+  float3 result = saturate((ambient + diffuse + specular)) * objectColor;
   return float4(result, 1.0f);
 }
 
