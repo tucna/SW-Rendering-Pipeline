@@ -58,7 +58,9 @@ Pipeline::VSOutput Pipeline::VertexShader(const Vertex& vertex)
 
 float4 Pipeline::PixelShader(VSOutput& psinput)
 {
-  float3 objectColor = m_Kd;
+  // TODO: correct handling of Kd, Ka, Ks
+
+  float3 objectColor = { 1.0f, 1.0f, 1.0f };
   float3 lightColor = { 1.0f, 1.0f, 1.0f };
 
   if (m_materialTextures->Kd_map)
@@ -68,11 +70,10 @@ float4 Pipeline::PixelShader(VSOutput& psinput)
 
     byte4 texColor = m_materialTextures->Kd_map[texY * m_materialTextures->texturesWidth + texX];
 
-    objectColor = { texColor.r / 255.0f, texColor.g / 255.0f, texColor.b / 255.0f };
+    objectColor = float3({texColor.r / 255.0f, texColor.g / 255.0f, texColor.b / 255.0f});
   }
 
-  float ambientStrength = 0.1f;
-  float3 ambient = ambientStrength * lightColor;
+  float3 ambient = 0.1f * lightColor;
 
   float3 normal = normalize(psinput.normal);
   float3 lightDir = normalize(m_lightPosition - psinput.worldPosition);
@@ -86,7 +87,7 @@ float4 Pipeline::PixelShader(VSOutput& psinput)
   float spec = pow(max(dot(viewDir, reflectDir), 0.0f), 32);
   float3 specular = specularStrength * spec * lightColor;
 
-  float3 result = saturate((ambient + diffuse + specular)) * objectColor;
+  float3 result = saturate((ambient + m_Kd * diffuse + specular)) * objectColor;
   return float4(result, 1.0f);
 }
 

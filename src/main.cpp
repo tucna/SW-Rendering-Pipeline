@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 using namespace std;
@@ -27,37 +28,51 @@ public:
     m_screenHeight = ScreenHeight();
     m_aspectRatio = (float)m_screenWidth / (float)m_screenHeight;
 
+    m_pipeline = make_unique<Pipeline>();
     m_loader = make_unique<objl::Loader>();
-    //m_loader->LoadFile("res/cornell_box.obj");
 
-    string directory = "nanosuit";
+    string directory = "cornell";
     m_loader->LoadFile(ReturnObjPath(directory));
+
+    m_depthBuffer = new float[m_screenWidth * m_screenHeight];
+    m_renderTarget = make_unique<tDX::Sprite>(m_screenWidth, m_screenHeight);
 
     m_PSTexturesSprites.resize(m_loader->LoadedMaterials.size());
 
     for (size_t materialID = 0; materialID < m_PSTexturesSprites.size(); materialID++)
     {
       if (m_loader->LoadedMaterials[materialID].map_Kd.size() > 0)
-        m_PSTexturesSprites[materialID].push_back(make_unique<tDX::Sprite>("res/" + directory + "/" + m_loader->LoadedMaterials[materialID].map_Kd));
+      {
+        m_PSTexturesSprites[materialID][MapType::KA_MAP].LoadFromFile("res/" + directory + "/" + m_loader->LoadedMaterials[materialID].map_Ka);
+        m_PSTexturesSprites[materialID][MapType::KD_MAP].LoadFromFile("res/" + directory + "/" + m_loader->LoadedMaterials[materialID].map_Kd);
+        m_PSTexturesSprites[materialID][MapType::KS_MAP].LoadFromFile("res/" + directory + "/" + m_loader->LoadedMaterials[materialID].map_Ks);
+      }
     };
 
+    if (m_loader->LoadedMaterials.empty())
+    {
+      // Create default material
+      objl::Material defaultMaterial = {};
 
-    // TODO
-    m_depthBuffer = new float[m_screenWidth * m_screenHeight];
-    m_renderTarget = make_unique<tDX::Sprite>(m_screenWidth, m_screenHeight);
+      defaultMaterial.name = "#default";
+      defaultMaterial.Kd = { 0.8f, 0.5f, 0.2f };
 
-    m_pipeline = make_unique<Pipeline>();
+      m_loader->LoadedMaterials.push_back(defaultMaterial);
+    }
 
-    size_t bufferSize = m_loader->LoadedMaterials.size() == 0 ? 1 : m_loader->LoadedMaterials.size();
+    size_t materialsNum = m_loader->LoadedMaterials.size() + 1; // One more for light
 
-    m_sortedVerticesByMaterial.resize(bufferSize/* + 1*/); // TODO Light material
-    m_sortedIndicesByMaterial.resize(bufferSize/* + 1*/); // TODO Light material
+    m_sortedVerticesByMaterial.resize(materialsNum);
+    m_sortedIndicesByMaterial.resize(materialsNum);
 
     for (auto& mesh : m_loader->LoadedMeshes)
     {
-      for (size_t materialID = 0; materialID < bufferSize; materialID++)
+      if (mesh.MeshMaterial.name.empty())
+        mesh.MeshMaterial.name = "#default";
+
+      for (size_t materialID = 0; materialID < materialsNum - 1; materialID++) // We can skip last material - light
       {
-        if (bufferSize == 1 || (mesh.MeshMaterial.name == m_loader->LoadedMaterials[materialID].name))
+        if (mesh.MeshMaterial.name == m_loader->LoadedMaterials[materialID].name)
         {
           for (auto& v : mesh.Vertices)
           {
@@ -75,32 +90,26 @@ public:
       }
     }
 
-    // TODO Light debug triangle shall be nicer
-    /*
     objl::Material lightMaterial = {};
+    lightMaterial.name = "light";
     lightMaterial.Ka = { 1.0f, 1.0f, 1.0f };
     lightMaterial.Kd = { 1.0f, 1.0f, 1.0f };
 
     m_loader->LoadedMaterials.push_back(lightMaterial);
 
-    m_sortedVerticesByMaterial[m_loader->LoadedMaterials.size() - 1].push_back({ { -0.25f,     0, 0 }, { 0, 1, 0 } });
-    m_sortedVerticesByMaterial[m_loader->LoadedMaterials.size() - 1].push_back({ {  0.25f, -0.25, 0 }, { 0, 1, 0 } });
-    m_sortedVerticesByMaterial[m_loader->LoadedMaterials.size() - 1].push_back({ {  0.25f,  0.25, 0 }, { 0, 1, 0 } });
+    uint8_t lightMaterialID = (uint8_t)m_loader->LoadedMaterials.size() - 1;
 
-    m_sortedIndicesByMaterial[m_loader->LoadedMaterials.size() - 1].push_back((uint32_t)m_sortedVerticesByMaterial[0].size() - 3);
-    m_sortedIndicesByMaterial[m_loader->LoadedMaterials.size() - 1].push_back((uint32_t)m_sortedVerticesByMaterial[0].size() - 2);
-    m_sortedIndicesByMaterial[m_loader->LoadedMaterials.size() - 1].push_back((uint32_t)m_sortedVerticesByMaterial[0].size() - 1);
-    */
+    m_sortedVerticesByMaterial[lightMaterialID].push_back({ { -0.25f,     0, 0 }, { 0, 1, 0 } });
+    m_sortedVerticesByMaterial[lightMaterialID].push_back({ {  0.25f, -0.25, 0 }, { 0, 1, 0 } });
+    m_sortedVerticesByMaterial[lightMaterialID].push_back({ {  0.25f,  0.25, 0 }, { 0, 1, 0 } });
+
+    m_sortedIndicesByMaterial[lightMaterialID].push_back((uint32_t)m_sortedVerticesByMaterial[0].size() - 3);
+    m_sortedIndicesByMaterial[lightMaterialID].push_back((uint32_t)m_sortedVerticesByMaterial[0].size() - 2);
+    m_sortedIndicesByMaterial[lightMaterialID].push_back((uint32_t)m_sortedVerticesByMaterial[0].size() - 1);
 
     PlaceModelToCenter();
 
-    //m_scene = make_unique<Scene>("res/cornell_box.obj", (byte4*)m_renderTarget->GetData(), ScreenWidth(), ScreenHeight());
-    //m_scene = make_unique<Scene>("res/nefertiti.obj", (byte4*)m_renderTarget->GetData(), ScreenWidth(), ScreenHeight());
-
-    //m_PSTexture = make_unique<tDX::Sprite>("res/cube.png");
-    //m_scene = make_unique<Scene>("res/cube.obj", (byte4*)m_renderTarget->GetData(), ScreenWidth(), ScreenHeight());
-    //m_scene->SetPSTexture((byte4*)m_PSTexture->GetData());
-
+    // Engine setup
     SetDrawTarget(m_renderTarget.get());
 
     return true;
@@ -113,6 +122,7 @@ public:
     // Keyboard control
     float coeficient = 5.0f * fElapsedTime;
 
+    if (GetKey(tDX::L).bHeld) { m_drawLight = !m_drawLight; }
     if (GetKey(tDX::SHIFT).bHeld) { coeficient *= 8; }
     if (GetKey(tDX::W).bHeld) { MoveCamera({ 0, 0, -coeficient}); }
     if (GetKey(tDX::S).bHeld) { MoveCamera({ 0, 0, coeficient }); }
@@ -159,43 +169,34 @@ public:
 
     m_pipeline->ClearDepthBuffer();
 
-    size_t bufferSize = m_loader->LoadedMaterials.size() == 0 ? 1 : m_loader->LoadedMaterials.size();
+    uint8_t materialsNum = m_drawLight ? (uint8_t)m_loader->LoadedMaterials.size() : (uint8_t)m_loader->LoadedMaterials.size() - 1;
 
-    for (size_t materialID = 0; materialID < bufferSize; materialID++)
+    for (size_t materialID = 0; materialID < materialsNum; materialID++)
     {
-      /* Ignoring debug lights for now
-      if (materialID == bufferSize - 1) // Light
-      {
-        m_pipeline->SetVSBuffers(m_mvpLightMatrix, m_viewMatrix, m_modelMatrix);
-      }
-      */
-
       m_pipeline->SetIAInput(m_sortedVerticesByMaterial[materialID], m_sortedIndicesByMaterial[materialID]);
 
-      m_materialTextures.Kd_map = (byte4*)m_PSTexturesSprites[materialID][0]->GetData();
-      m_materialTextures.texturesHeight = m_PSTexturesSprites[materialID][0]->height;
-      m_materialTextures.texturesWidth = m_PSTexturesSprites[materialID][0]->width;
-
-      if (bufferSize > 1)
+      if (materialID == m_loader->LoadedMaterials.size() - 1) // Light
       {
-        m_pipeline->SetPSBuffers(
-          { m_loader->LoadedMaterials[materialID].Kd.X, m_loader->LoadedMaterials[materialID].Kd.Y, m_loader->LoadedMaterials[materialID].Kd.Z },
-          { m_loader->LoadedMaterials[materialID].Ka.X, m_loader->LoadedMaterials[materialID].Ka.Y, m_loader->LoadedMaterials[materialID].Ka.Z },
-          m_lightTranslation,
-          m_eye,
-          &m_materialTextures
-        );
+        m_pipeline->SetVSBuffers(m_mvpLightMatrix, m_viewMatrix, m_modelMatrix);
+
+        m_materialTextures.Kd_map = nullptr;
+        m_materialTextures.texturesHeight = 0;
+        m_materialTextures.texturesWidth = 0;
       }
       else
       {
-        m_pipeline->SetPSBuffers(
-          { 0.8f, 0.5f, 0.2f },
-          { 0.1f, 0.1f, 0.1f },
-          m_lightTranslation,
-          m_eye,
-          &m_materialTextures
-        );
+        m_materialTextures.Kd_map = (byte4*)m_PSTexturesSprites[materialID][MapType::KD_MAP].GetData();
+        m_materialTextures.texturesHeight = m_PSTexturesSprites[materialID][MapType::KD_MAP].height;
+        m_materialTextures.texturesWidth = m_PSTexturesSprites[materialID][MapType::KD_MAP].width;
       }
+
+      m_pipeline->SetPSBuffers(
+        { m_loader->LoadedMaterials[materialID].Kd.X, m_loader->LoadedMaterials[materialID].Kd.Y, m_loader->LoadedMaterials[materialID].Kd.Z },
+        { m_loader->LoadedMaterials[materialID].Ka.X, m_loader->LoadedMaterials[materialID].Ka.Y, m_loader->LoadedMaterials[materialID].Ka.Z },
+        m_lightTranslation,
+        m_eye,
+        &m_materialTextures
+      );
 
       m_pipeline->Draw();
     }
@@ -298,9 +299,16 @@ public:
   }
 
 private:
+  enum class MapType
+  {
+    KA_MAP,
+    KD_MAP,
+    KS_MAP
+  };
+
   unique_ptr<tDX::Sprite> m_renderTarget;
 
-  vector<vector<unique_ptr<tDX::Sprite>>> m_PSTexturesSprites;
+  vector<std::unordered_map<MapType, tDX::Sprite>> m_PSTexturesSprites;
 
   std::unique_ptr<objl::Loader> m_loader;
   std::unique_ptr<Pipeline> m_pipeline;
@@ -334,6 +342,8 @@ private:
   uint16_t m_screenHeight;
 
   MaterialTextures m_materialTextures;
+
+  bool m_drawLight = false;
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
