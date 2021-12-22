@@ -59,29 +59,46 @@ Pipeline::VSOutput Pipeline::VertexShader(const Vertex& vertex)
 float4 Pipeline::PixelShader(VSOutput& psinput)
 {
   const float3 lightAmbient  = { 0.2f, 0.2f, 0.2f };
-  const float3 lightDiffuse  = { 0.5f, 0.5f, 0.5f };
+  const float3 lightDiffuse  = { 0.8f, 0.8f, 0.8f };
   const float3 lightSpecular = { 1.0f, 1.0f, 1.0f };
 
-  float3 objectColor = { 1.0f, 1.0f, 1.0f };
+  float3 objectAmbient = { 0.1f, 0.1f, 0.1f };
+  float3 objectDiffuse = { 1.0f, 1.0f, 1.0f };
+  float3 objectSpecular = { 1.0f, 1.0f, 1.0f };
+
+  if (m_textures->Ka_map)
+  {
+    objectAmbient = sample(m_textures->Ka_map, { m_textures->texturesWidth, m_textures->texturesHeight }, psinput.uv);
+    m_reflectance.Ka = { 1.0f, 1.0f, 1.0f };
+  }
 
   if (m_textures->Kd_map)
-    objectColor = sample(m_textures->Kd_map, { m_textures->texturesWidth, m_textures->texturesHeight }, psinput.uv);
+  {
+    objectDiffuse = sample(m_textures->Kd_map, { m_textures->texturesWidth, m_textures->texturesHeight }, psinput.uv);
+    m_reflectance.Kd = { 1.0f, 1.0f, 1.0f };
+  }
 
-  float3 ambient = m_reflectance.Ka * lightAmbient;
+  if (m_textures->Ks_map)
+  {
+    objectSpecular = sample(m_textures->Ks_map, { m_textures->texturesWidth, m_textures->texturesHeight }, psinput.uv);
+    m_reflectance.Ks = { 1.0f, 1.0f, 1.0f };
+  }
+
+  float3 ambient = m_reflectance.Ka * lightAmbient * objectAmbient;
 
   float3 normal = normalize(psinput.normal);
   float3 lightDir = normalize(m_lightPosition - psinput.worldPosition);
 
   float diff = max(dot(normal, lightDir), 0.0f);
-  float3 diffuse = m_reflectance.Kd * diff * lightDiffuse;
+  float3 diffuse = m_reflectance.Kd * diff * lightDiffuse * objectDiffuse;
 
   float specularStrength = 0.5f;
   float3 viewDir = normalize(m_cameraPosition - psinput.worldPosition);
   float3 reflectDir = reflect(-lightDir, normal);
   float spec = pow(max(dot(viewDir, reflectDir), 0.0f), 32);
-  float3 specular = m_reflectance.Ks * spec * lightSpecular;
+  float3 specular = m_reflectance.Ks * spec * lightSpecular * objectSpecular;
 
-  float3 result = saturate(ambient + diffuse + specular) * objectColor;
+  float3 result = saturate(ambient + diffuse + specular);
   return float4(result, 1.0f);
 }
 

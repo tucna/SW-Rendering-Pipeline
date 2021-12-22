@@ -31,7 +31,9 @@ struct uint2 { uint16_t x, y; };
 
 struct MaterialTextures
 {
+  byte4* Ka_map;
   byte4* Kd_map;
+  byte4* Ks_map;
   uint16_t texturesWidth;
   uint16_t texturesHeight;
 };

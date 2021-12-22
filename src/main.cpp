@@ -31,7 +31,7 @@ public:
     m_pipeline = make_unique<Pipeline>();
     m_loader = make_unique<objl::Loader>();
 
-    string directory = "nanosuit";
+    string directory = "cornell";
     m_loader->LoadFile(ReturnObjPath(directory));
 
     m_depthBuffer = new float[m_screenWidth * m_screenHeight];
@@ -41,12 +41,12 @@ public:
 
     for (size_t materialID = 0; materialID < m_PSTexturesSprites.size(); materialID++)
     {
-      if (m_loader->LoadedMaterials[materialID].map_Kd.size() > 0)
-      {
+      if (m_loader->LoadedMaterials[materialID].map_Ka.size() > 0)
         m_PSTexturesSprites[materialID][MapType::KA_MAP].LoadFromFile("res/" + directory + "/" + m_loader->LoadedMaterials[materialID].map_Ka);
+      if (m_loader->LoadedMaterials[materialID].map_Kd.size() > 0)
         m_PSTexturesSprites[materialID][MapType::KD_MAP].LoadFromFile("res/" + directory + "/" + m_loader->LoadedMaterials[materialID].map_Kd);
+      if (m_loader->LoadedMaterials[materialID].map_Ks.size() > 0)
         m_PSTexturesSprites[materialID][MapType::KS_MAP].LoadFromFile("res/" + directory + "/" + m_loader->LoadedMaterials[materialID].map_Ks);
-      }
     };
 
     if (m_loader->LoadedMaterials.empty())
@@ -185,13 +185,17 @@ public:
       {
         m_pipeline->SetVSBuffers(m_mvpLightMatrix, m_viewMatrix, m_modelMatrix);
 
+        m_materialTextures.Ka_map = nullptr;
         m_materialTextures.Kd_map = nullptr;
+        m_materialTextures.Ks_map = nullptr;
         m_materialTextures.texturesHeight = 0;
         m_materialTextures.texturesWidth = 0;
       }
       else
       {
+        m_materialTextures.Ka_map = (byte4*)m_PSTexturesSprites[materialID][MapType::KA_MAP].GetData();
         m_materialTextures.Kd_map = (byte4*)m_PSTexturesSprites[materialID][MapType::KD_MAP].GetData();
+        m_materialTextures.Ks_map = (byte4*)m_PSTexturesSprites[materialID][MapType::KS_MAP].GetData();
         m_materialTextures.texturesHeight = m_PSTexturesSprites[materialID][MapType::KD_MAP].height;
         m_materialTextures.texturesWidth = m_PSTexturesSprites[materialID][MapType::KD_MAP].width;
       }
