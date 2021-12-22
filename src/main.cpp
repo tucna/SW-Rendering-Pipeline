@@ -31,7 +31,7 @@ public:
     m_pipeline = make_unique<Pipeline>();
     m_loader = make_unique<objl::Loader>();
 
-    string directory = "mars";
+    string directory = "nanosuit";
     m_loader->LoadFile(ReturnObjPath(directory));
 
     m_depthBuffer = new float[m_screenWidth * m_screenHeight];
@@ -171,9 +171,15 @@ public:
 
     uint8_t materialsNum = m_drawLight ? (uint8_t)m_loader->LoadedMaterials.size() : (uint8_t)m_loader->LoadedMaterials.size() - 1;
 
+    MaterialReflectance reflectance = {};
+
     for (size_t materialID = 0; materialID < materialsNum; materialID++)
     {
       m_pipeline->SetIAInput(m_sortedVerticesByMaterial[materialID], m_sortedIndicesByMaterial[materialID]);
+
+      reflectance.Ka = { m_loader->LoadedMaterials[materialID].Ka.X, m_loader->LoadedMaterials[materialID].Ka.Y, m_loader->LoadedMaterials[materialID].Ka.Z };
+      reflectance.Kd = { m_loader->LoadedMaterials[materialID].Kd.X, m_loader->LoadedMaterials[materialID].Kd.Y, m_loader->LoadedMaterials[materialID].Kd.Z };
+      reflectance.Ks = { m_loader->LoadedMaterials[materialID].Ks.X, m_loader->LoadedMaterials[materialID].Ks.Y, m_loader->LoadedMaterials[materialID].Ks.Z };
 
       if (materialID == m_loader->LoadedMaterials.size() - 1) // Light
       {
@@ -191,11 +197,10 @@ public:
       }
 
       m_pipeline->SetPSBuffers(
-        { m_loader->LoadedMaterials[materialID].Kd.X, m_loader->LoadedMaterials[materialID].Kd.Y, m_loader->LoadedMaterials[materialID].Kd.Z },
-        { m_loader->LoadedMaterials[materialID].Ka.X, m_loader->LoadedMaterials[materialID].Ka.Y, m_loader->LoadedMaterials[materialID].Ka.Z },
+        reflectance,
+        &m_materialTextures,
         m_lightTranslation,
-        m_eye,
-        &m_materialTextures
+        m_eye
       );
 
       m_pipeline->Draw();

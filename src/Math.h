@@ -27,12 +27,20 @@ struct float4
 };
 
 struct byte4 { uint8_t r, g, b, a; };
+struct uint2 { uint16_t x, y; };
 
 struct MaterialTextures
 {
   byte4* Kd_map;
   uint16_t texturesWidth;
   uint16_t texturesHeight;
+};
+
+struct MaterialReflectance
+{
+  float3 Ka;
+  float3 Kd;
+  float3 Ks;
 };
 
 struct Vertex
@@ -112,17 +120,27 @@ inline float length(const float3& v1) { return sqrt(v1.x * v1.x + v1.y * v1.y + 
 inline float saturate(float s) { return s < 0.0f ? 0.0f : s > 1.0f ? 1.0f : s; }
 inline float3 saturate(const float3& v1) { return { saturate(v1.x), saturate(v1.y), saturate(v1.z) }; }
 inline float3 reflect(const float3& v1, const float3& v2) { return v1 - 2 * v2 * dot(v1, v2); }
-
-inline float3 cross(const float3& v1, const float3& v2)
-{
-  return { v1.y * v2.z - v1.z * v2.y, v1.z * v2.x - v1.x * v2.z, v1.x * v2.y - v1.y * v2.x };
-}
+inline float3 cross(const float3& v1, const float3& v2) { return { v1.y * v2.z - v1.z * v2.y, v1.z * v2.x - v1.x * v2.z, v1.x * v2.y - v1.y * v2.x }; }
 
 inline float3 normalize(const float3& v1)
 {
   float length = sqrt(v1.x * v1.x + v1.y * v1.y + v1.z * v1.z);
 
   return {v1.x / length, v1.y / length, v1.z / length};
+}
+
+inline float3 sample(byte4* texture, uint2 size, float2 uv)
+{
+  float3 color;
+
+  uint16_t texX = (uint16_t)lround(uv.x * size.x);
+  uint16_t texY = (uint16_t)lround((1.0f - uv.y) * size.y);
+
+  byte4 texColor = texture[texY * size.x + texX];
+
+  color = { texColor.r / 255.0f, texColor.g / 255.0f, texColor.b / 255.0f };
+
+  return color;
 }
 
 // More opeartors

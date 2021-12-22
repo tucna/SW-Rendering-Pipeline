@@ -22,7 +22,7 @@ public:
   void SetIAInput(const std::vector<math::Vertex>& vertices, const std::vector<uint32_t>& indices) { m_vertices = &vertices; m_indices = &indices; }
   void SetVSBuffers(math::float4x4 mvpMatrix, math::float4x4 viewMatrix, math::float4x4 modelMatrix) { m_mvpMatrix = mvpMatrix; m_viewMatrix = viewMatrix; m_modelMatrix = modelMatrix; }
   void SetRSDescriptor(uint16_t viewportWidth, uint16_t viewportHeight, Culling culling) { m_viewportWidth = viewportWidth; m_viewportHeight = viewportHeight; m_culling = culling; }
-  void SetPSBuffers(math::float3 Kd, math::float3 Ka, math::float3 lightPosition, math::float3 cameraPosition, math::MaterialTextures* materialTextures) { m_Kd = Kd; m_Ka = Ka; m_lightPosition = lightPosition; m_cameraPosition = cameraPosition; m_materialTextures = materialTextures; }
+  void SetPSBuffers(const math::MaterialReflectance& reflectance, math::MaterialTextures* textures, math::float3 lightPosition, math::float3 cameraPosition) { m_reflectance = reflectance; m_textures = textures; m_lightPosition = lightPosition; m_cameraPosition = cameraPosition; }
   void SetOMBuffers(float* depthBuffer, math::byte4* renderTarget, uint16_t buffersWidth, uint16_t buffersHeight) { m_depthBuffer = depthBuffer; m_renderTarget = renderTarget; m_buffersWidth = buffersWidth; m_buffersHeight = buffersHeight; }
 
   void ClearDepthBuffer();
@@ -71,11 +71,10 @@ private:
   Culling m_culling = Culling::None;
 
   // PS
-  math::float3 m_Kd;
-  math::float3 m_Ka;
   math::float3 m_lightPosition;
   math::float3 m_cameraPosition;
-  math::MaterialTextures* m_materialTextures;
+  math::MaterialTextures* m_textures;
+  math::MaterialReflectance m_reflectance;
 
   // OM
   float* m_depthBuffer = nullptr;

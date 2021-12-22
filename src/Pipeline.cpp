@@ -64,31 +64,24 @@ float4 Pipeline::PixelShader(VSOutput& psinput)
 
   float3 objectColor = { 1.0f, 1.0f, 1.0f };
 
-  if (m_materialTextures->Kd_map)
-  {
-    uint16_t texX = (uint16_t)lround(psinput.uv.x * m_materialTextures->texturesWidth);
-    uint16_t texY = (uint16_t)lround((1.0f - psinput.uv.y) * m_materialTextures->texturesHeight);
+  if (m_textures->Kd_map)
+    objectColor = sample(m_textures->Kd_map, { m_textures->texturesWidth, m_textures->texturesHeight }, psinput.uv);
 
-    byte4 texColor = m_materialTextures->Kd_map[texY * m_materialTextures->texturesWidth + texX];
-
-    objectColor = float3({texColor.r / 255.0f, texColor.g / 255.0f, texColor.b / 255.0f});
-  }
-
-  float3 ambient = m_Ka * lightAmbient;
+  float3 ambient = m_reflectance.Ka * lightAmbient;
 
   float3 normal = normalize(psinput.normal);
   float3 lightDir = normalize(m_lightPosition - psinput.worldPosition);
 
   float diff = max(dot(normal, lightDir), 0.0f);
-  float3 diffuse = m_Kd * diff * lightDiffuse;
+  float3 diffuse = m_reflectance.Kd * diff * lightDiffuse;
 
   float specularStrength = 0.5f;
   float3 viewDir = normalize(m_cameraPosition - psinput.worldPosition);
   float3 reflectDir = reflect(-lightDir, normal);
   float spec = pow(max(dot(viewDir, reflectDir), 0.0f), 32);
-  float3 specular = specularStrength * spec * lightSpecular;
+  float3 specular = m_reflectance.Ks * spec * lightSpecular;
 
-  float3 result = saturate((ambient + diffuse + specular)) * objectColor;
+  float3 result = saturate(ambient + diffuse + specular) * objectColor;
   return float4(result, 1.0f);
 }
 
