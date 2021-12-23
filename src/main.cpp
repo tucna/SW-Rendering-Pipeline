@@ -33,7 +33,14 @@ public:
 
   bool OnUserCreate() override
   {
-    m_modelScene = m_importer.ReadFile("res/wall/wall.obj",
+    m_screenWidth = ScreenWidth();
+    m_screenHeight = ScreenHeight();
+    m_aspectRatio = (float)m_screenWidth / (float)m_screenHeight;
+
+    m_pipeline = make_unique<Pipeline>();
+
+    string directory = "nanosuit";
+    m_modelScene = m_importer.ReadFile(ReturnObjPath(directory),
       aiProcess_PreTransformVertices |
       aiProcess_CalcTangentSpace |
       aiProcess_GenSmoothNormals |
@@ -43,20 +50,9 @@ public:
       aiProcess_ValidateDataStructure
     );
 
-    m_screenWidth = ScreenWidth();
-    m_screenHeight = ScreenHeight();
-    m_aspectRatio = (float)m_screenWidth / (float)m_screenHeight;
-
-    m_pipeline = make_unique<Pipeline>();
-    //m_loader = make_unique<objl::Loader>();
-
-    string directory = "wall";
-    //m_loader->LoadFile(ReturnObjPath(directory));
-
     m_depthBuffer = new float[m_screenWidth * m_screenHeight];
     m_renderTarget = make_unique<tDX::Sprite>(m_screenWidth, m_screenHeight);
 
-    //m_PSTexturesSprites.resize(m_loader->LoadedMaterials.size());
     m_PSTexturesSprites.resize(m_modelScene->mNumMaterials);
 
     for (size_t materialID = 0; materialID < m_modelScene->mNumMaterials; materialID++)
@@ -75,40 +71,11 @@ public:
         m_PSTexturesSprites[materialID][MapType::Bump_map].LoadFromFile("res/" + directory + "/" + texPath.C_Str());
     };
 
-    /*
-    for (size_t materialID = 0; materialID < m_PSTexturesSprites.size(); materialID++)
-    {
-      if (m_loader->LoadedMaterials[materialID].map_Ka.size() > 0)
-        m_PSTexturesSprites[materialID][MapType::Ka_map].LoadFromFile("res/" + directory + "/" + m_loader->LoadedMaterials[materialID].map_Ka);
-      if (m_loader->LoadedMaterials[materialID].map_Kd.size() > 0)
-        m_PSTexturesSprites[materialID][MapType::Kd_map].LoadFromFile("res/" + directory + "/" + m_loader->LoadedMaterials[materialID].map_Kd);
-      if (m_loader->LoadedMaterials[materialID].map_Ks.size() > 0)
-        m_PSTexturesSprites[materialID][MapType::Ks_map].LoadFromFile("res/" + directory + "/" + m_loader->LoadedMaterials[materialID].map_Ks);
-      if (m_loader->LoadedMaterials[materialID].map_bump.size() > 0)
-        m_PSTexturesSprites[materialID][MapType::Bump_map].LoadFromFile("res/" + directory + "/" + m_loader->LoadedMaterials[materialID].map_bump);
-    };
-    */
-
-    /* TODO assimp
-    if (m_modelScene->mNumMaterials == 0)
-    {
-      // Create default material
-      objl::Material defaultMaterial = {};
-
-      defaultMaterial.name = "#default";
-      defaultMaterial.Kd = { 0.8f, 0.5f, 0.2f };
-
-      m_loader->LoadedMaterials.push_back(defaultMaterial);
-    }
-    */
-
-    //size_t materialsNum = m_loader->LoadedMaterials.size() + 1; // One more for light
-    size_t materialsNum = m_modelScene->mNumMaterials; // One more for light
+    size_t materialsNum = m_modelScene->mNumMaterials; // TODO One more for light
 
     m_sortedVerticesByMaterial.resize(materialsNum);
     m_sortedIndicesByMaterial.resize(materialsNum);
 
-    //for (auto& mesh : m_loader->LoadedMeshes)
     for (size_t meshID = 0; meshID < m_modelScene->mNumMeshes; meshID++)
     {
       const aiMesh* mesh = m_modelScene->mMeshes[meshID];
@@ -234,12 +201,6 @@ public:
         reflectance.Kd = { color.r, color.g, color.b };
       if (mtl->Get(AI_MATKEY_COLOR_SPECULAR, color) == AI_SUCCESS)
         reflectance.Ks = { color.r, color.g, color.b };
-
-      /*
-      reflectance.Ka = { m_loader->LoadedMaterials[materialID].Ka.X, m_loader->LoadedMaterials[materialID].Ka.Y, m_loader->LoadedMaterials[materialID].Ka.Z };
-      reflectance.Kd = { m_loader->LoadedMaterials[materialID].Kd.X, m_loader->LoadedMaterials[materialID].Kd.Y, m_loader->LoadedMaterials[materialID].Kd.Z };
-      reflectance.Ks = { m_loader->LoadedMaterials[materialID].Ks.X, m_loader->LoadedMaterials[materialID].Ks.Y, m_loader->LoadedMaterials[materialID].Ks.Z };
-      */
 
       /*
       if (materialID == materialsNum) // TODO: Light
@@ -391,7 +352,6 @@ private:
 
   vector<std::unordered_map<MapType, tDX::Sprite>> m_PSTexturesSprites;
 
-  //std::unique_ptr<objl::Loader> m_loader;
   std::unique_ptr<Pipeline> m_pipeline;
 
   // Matrices
@@ -413,7 +373,9 @@ private:
   float3 m_target = { 0, 0, -1 };
   float3 m_up = { 0, 1, 0 };
 
+  // Vertices
   std::vector<std::vector<Vertex>> m_sortedVerticesByMaterial;
+  // Indices currently not used
   std::vector<std::vector<uint32_t>> m_sortedIndicesByMaterial;
 
   float* m_depthBuffer;
