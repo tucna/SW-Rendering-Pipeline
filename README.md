@@ -2,7 +2,7 @@
 Graphics rendering pipeline without any external graphical dependencies running fully on CPU.
 
 <p align="center">  
-  <img src="doc/cornell.gif">
+  <img src="doc/cornell.gif"> <img src="doc/wall.gif">
 </p>
 
 # Controls
@@ -14,7 +14,7 @@ Graphics rendering pipeline without any external graphical dependencies running 
 
 # Screenshots
 <p align="center">  
-  <img src="doc/1.jpg" width =250px>&nbsp; &nbsp; <img src="doc/2.jpg" width =250px>&nbsp; &nbsp; <img src="doc/3.jpg" width =250px> &nbsp; &nbsp; <img src="doc/4.jpg" width =250px> &nbsp; &nbsp; <img src="doc/5.jpg" width =250px>
+  <img src="doc/1.jpg" width=300px> <img src="doc/2.jpg" width=300px> <img src="doc/3.jpg" width=300px> <img src="doc/4.jpg" width=300px> <img src="doc/5.jpg" width=300px> <img src="doc/6.jpg" width=300px>
 </p>
 
 # Features
@@ -24,6 +24,7 @@ Graphics rendering pipeline without any external graphical dependencies running 
 - Phong reflection model.
 - Phong shading.
 - Texture mapping.
+- Normal mapping.
 - Z-buffering and depth buffer handling.
 - Render to texture.
 - Rendering process emulating standard GPU pipeline.
