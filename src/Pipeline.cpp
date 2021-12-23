@@ -77,13 +77,22 @@ float4 Pipeline::PixelShader(VSOutput& psinput)
 
   float3 ambient = m_reflectance.Ka * lightAmbient * objectAmbient;
 
-  float3 normal = normalize(psinput.normal);
+  float3 normal;
+
+  if (m_textures->Bump_map)
+  {
+    normal = sample(m_textures->Bump_map, { m_textures->texturesWidth, m_textures->texturesHeight }, psinput.uv);
+    normal = normalize(normal * 2.0f - 1.0f);
+    normal.y = -normal.y;
+  }
+  else
+    normal = normalize(psinput.normal);
+
   float3 lightDir = normalize(m_lightPosition - psinput.worldPosition);
 
   float diff = max(dot(normal, lightDir), 0.0f);
   float3 diffuse = m_reflectance.Kd * diff * lightDiffuse * objectDiffuse;
 
-  float specularStrength = 0.5f;
   float3 viewDir = normalize(m_cameraPosition - psinput.worldPosition);
   float3 reflectDir = reflect(-lightDir, normal);
   float spec = pow(max(dot(viewDir, reflectDir), 0.0f), 32);

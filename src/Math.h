@@ -34,6 +34,7 @@ struct MaterialTextures
   byte4* Ka_map;
   byte4* Kd_map;
   byte4* Ks_map;
+  byte4* Bump_map;
   uint16_t texturesWidth;
   uint16_t texturesHeight;
 };
@@ -62,6 +63,7 @@ inline float3 operator-(const float3 &v1) { return { -v1.x, -v1.y, -v1.z }; }
 inline float3 operator-(const float3 &v1, const float3 &v2) { return { v1.x - v2.x, v1.y - v2.y, v1.z - v2.z }; }
 inline float3 operator+(const float3 &v1, const float3 &v2) { return { v1.x + v2.x, v1.y + v2.y, v1.z + v2.z }; }
 inline float3 operator*(float s1, const float3 &v1) { return { v1.x * s1, v1.y * s1, v1.z * s1 }; }
+inline float3 operator-(const float3 &v1, float s1) { return { v1.x - s1, v1.y - s1, v1.z - s1 }; }
 inline float3 operator*(const float3 &v1, float s1) { return { v1.x * s1, v1.y * s1, v1.z * s1 }; }
 inline float3 operator*(const float3 &v1, const float3 &v2) { return { v1.x * v2.x, v1.y * v2.y, v1.z * v2.z }; }
 
@@ -135,8 +137,8 @@ inline float3 sample(byte4* texture, uint2 size, float2 uv)
 {
   float3 color;
 
-  uint16_t texX = (uint16_t)lround(uv.x * size.x);
-  uint16_t texY = (uint16_t)lround((1.0f - uv.y) * size.y);
+  uint16_t texX = (uint16_t)floor(uv.x * size.x);
+  uint16_t texY = (uint16_t)floor((1.0f - uv.y) * size.y);
 
   byte4 texColor = texture[texY * size.x + texX];
 

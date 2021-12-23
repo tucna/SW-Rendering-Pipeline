@@ -31,7 +31,7 @@ public:
     m_pipeline = make_unique<Pipeline>();
     m_loader = make_unique<objl::Loader>();
 
-    string directory = "mars";
+    string directory = "wall";
     m_loader->LoadFile(ReturnObjPath(directory));
 
     m_depthBuffer = new float[m_screenWidth * m_screenHeight];
@@ -42,11 +42,13 @@ public:
     for (size_t materialID = 0; materialID < m_PSTexturesSprites.size(); materialID++)
     {
       if (m_loader->LoadedMaterials[materialID].map_Ka.size() > 0)
-        m_PSTexturesSprites[materialID][MapType::KA_MAP].LoadFromFile("res/" + directory + "/" + m_loader->LoadedMaterials[materialID].map_Ka);
+        m_PSTexturesSprites[materialID][MapType::Ka_map].LoadFromFile("res/" + directory + "/" + m_loader->LoadedMaterials[materialID].map_Ka);
       if (m_loader->LoadedMaterials[materialID].map_Kd.size() > 0)
-        m_PSTexturesSprites[materialID][MapType::KD_MAP].LoadFromFile("res/" + directory + "/" + m_loader->LoadedMaterials[materialID].map_Kd);
+        m_PSTexturesSprites[materialID][MapType::Kd_map].LoadFromFile("res/" + directory + "/" + m_loader->LoadedMaterials[materialID].map_Kd);
       if (m_loader->LoadedMaterials[materialID].map_Ks.size() > 0)
-        m_PSTexturesSprites[materialID][MapType::KS_MAP].LoadFromFile("res/" + directory + "/" + m_loader->LoadedMaterials[materialID].map_Ks);
+        m_PSTexturesSprites[materialID][MapType::Ks_map].LoadFromFile("res/" + directory + "/" + m_loader->LoadedMaterials[materialID].map_Ks);
+      if (m_loader->LoadedMaterials[materialID].map_bump.size() > 0)
+        m_PSTexturesSprites[materialID][MapType::Bump_map].LoadFromFile("res/" + directory + "/" + m_loader->LoadedMaterials[materialID].map_bump);
     };
 
     if (m_loader->LoadedMaterials.empty())
@@ -188,16 +190,18 @@ public:
         m_materialTextures.Ka_map = nullptr;
         m_materialTextures.Kd_map = nullptr;
         m_materialTextures.Ks_map = nullptr;
+        m_materialTextures.Bump_map = nullptr;
         m_materialTextures.texturesHeight = 0;
         m_materialTextures.texturesWidth = 0;
       }
       else
       {
-        m_materialTextures.Ka_map = (byte4*)m_PSTexturesSprites[materialID][MapType::KA_MAP].GetData();
-        m_materialTextures.Kd_map = (byte4*)m_PSTexturesSprites[materialID][MapType::KD_MAP].GetData();
-        m_materialTextures.Ks_map = (byte4*)m_PSTexturesSprites[materialID][MapType::KS_MAP].GetData();
-        m_materialTextures.texturesHeight = m_PSTexturesSprites[materialID][MapType::KD_MAP].height;
-        m_materialTextures.texturesWidth = m_PSTexturesSprites[materialID][MapType::KD_MAP].width;
+        m_materialTextures.Ka_map = (byte4*)m_PSTexturesSprites[materialID][MapType::Ka_map].GetData();
+        m_materialTextures.Kd_map = (byte4*)m_PSTexturesSprites[materialID][MapType::Kd_map].GetData();
+        m_materialTextures.Ks_map = (byte4*)m_PSTexturesSprites[materialID][MapType::Ks_map].GetData();
+        m_materialTextures.Bump_map = (byte4*)m_PSTexturesSprites[materialID][MapType::Bump_map].GetData();
+        m_materialTextures.texturesHeight = m_PSTexturesSprites[materialID][MapType::Kd_map].height;
+        m_materialTextures.texturesWidth = m_PSTexturesSprites[materialID][MapType::Kd_map].width;
       }
 
       m_pipeline->SetPSBuffers(
@@ -310,9 +314,10 @@ public:
 private:
   enum class MapType
   {
-    KA_MAP,
-    KD_MAP,
-    KS_MAP
+    Ka_map,
+    Kd_map,
+    Ks_map,
+    Bump_map
   };
 
   unique_ptr<tDX::Sprite> m_renderTarget;
