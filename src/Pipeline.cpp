@@ -110,11 +110,18 @@ float4 Pipeline::PixelShader(VSOutput& psinput)
   float3 diffuse = m_reflectance.Kd * diff * lightDiffuse * objectDiffuse;
 
   float3 viewDir = normalize(m_cameraPosition - psinput.worldPosition);
-  float3 reflectDir = reflect(-lightDir, normal);
-  float spec = pow(max(dot(viewDir, reflectDir), 0.0f), 32);
+
+  // Blinn-Phong
+  float3 halfwayDir = normalize(lightDir + viewDir);
+  float spec = pow(max(dot(normal, halfwayDir), 0.0f), 32);
+
+  // Phong
+  //float3 reflectDir = reflect(-lightDir, normal);
+  //float spec = pow(max(dot(viewDir, reflectDir), 0.0f), 32);
+
   float3 specular = m_reflectance.Ks * spec * lightSpecular * objectSpecular;
 
-  float3 result = saturate(ambient + diffuse + specular);
+  float3 result = saturate(ambient + diffuse * 2 + specular);
   return float4(result, 1.0f);
 }
 
