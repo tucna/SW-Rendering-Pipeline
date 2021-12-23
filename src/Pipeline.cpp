@@ -67,22 +67,13 @@ float4 Pipeline::PixelShader(VSOutput& psinput)
   float3 objectSpecular = { 1.0f, 1.0f, 1.0f };
 
   if (m_textures->Ka_map)
-  {
     objectAmbient = sample(m_textures->Ka_map, { m_textures->texturesWidth, m_textures->texturesHeight }, psinput.uv);
-    m_reflectance.Ka = { 1.0f, 1.0f, 1.0f };
-  }
 
   if (m_textures->Kd_map)
-  {
     objectDiffuse = sample(m_textures->Kd_map, { m_textures->texturesWidth, m_textures->texturesHeight }, psinput.uv);
-    m_reflectance.Kd = { 1.0f, 1.0f, 1.0f };
-  }
 
   if (m_textures->Ks_map)
-  {
     objectSpecular = sample(m_textures->Ks_map, { m_textures->texturesWidth, m_textures->texturesHeight }, psinput.uv);
-    m_reflectance.Ks = { 1.0f, 1.0f, 1.0f };
-  }
 
   float3 ambient = m_reflectance.Ka * lightAmbient * objectAmbient;
 
