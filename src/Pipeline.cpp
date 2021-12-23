@@ -51,6 +51,12 @@ Pipeline::VSOutput Pipeline::VertexShader(const Vertex& vertex)
   float4 n = m_modelMatrix * float4(vertex.normal, 0.0f);
   output.normal = n.xyz();
 
+  float4 b = m_modelMatrix * float4(vertex.bitangent, 0.0f);
+  output.bitangent = b.xyz();
+
+  float4 t = m_modelMatrix * float4(vertex.tangent, 0.0f);
+  output.tangent = t.xyz();
+
   output.uv = vertex.uv;
 
   return output;
@@ -95,7 +101,6 @@ float4 Pipeline::PixelShader(VSOutput& psinput)
 
     normal = sample(m_textures->Bump_map, { m_textures->texturesWidth, m_textures->texturesHeight }, psinput.uv);
     normal = normalize(normal * 2.0f - 1.0f);
-    normal.y = -normal.y;
     normal = normalize(float4(TBN * float4(normal, 0.0f)).xyz());
   }
 
@@ -121,6 +126,8 @@ void Pipeline::PostVertexShader(VSOutput& vsoutput)
   // Everything from vsoutput must be processed TODO: template?
   vsoutput.position *= invW;
   vsoutput.normal *= invW;
+  vsoutput.tangent *= invW;
+  vsoutput.bitangent *= invW;
   vsoutput.uv *= invW;
   vsoutput.worldPosition *= invW;
 
@@ -134,6 +141,8 @@ void Pipeline::PrimitiveAssembly()
     vertex.position = m_VSOutputs[index].position;
     vertex.worldPosition = m_VSOutputs[index].worldPosition;
     vertex.normal   = m_VSOutputs[index].normal;
+    vertex.tangent = m_VSOutputs[index].tangent;
+    vertex.bitangent = m_VSOutputs[index].bitangent;
     vertex.uv = m_VSOutputs[index].uv;
   };
 
@@ -144,43 +153,6 @@ void Pipeline::PrimitiveAssembly()
     FillUpData(triangle.v1, index + 0);
     FillUpData(triangle.v2, index + 1);
     FillUpData(triangle.v3, index + 2);
-
-    // TODO: this is wasteful to recompute again and again
-    float3 edge1 = float4(triangle.v2.position - triangle.v1.position).xyz();
-    float3 edge2 = float4(triangle.v3.position - triangle.v1.position).xyz();
-    float2 deltaUV1 = triangle.v2.uv - triangle.v1.uv;
-    float2 deltaUV2 = triangle.v3.uv - triangle.v1.uv;
-
-    float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
-
-    float3 tangent, bitangent;
-
-    tangent.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
-    tangent.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
-    tangent.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
-
-    bitangent.x = f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
-    bitangent.y = f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
-    bitangent.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
-
-    triangle.v1.tangent = float4(m_modelMatrix * float4(tangent, 0.0f)).xyz();
-    triangle.v1.bitangent = float4(m_modelMatrix * float4(bitangent, 0.0f)).xyz();
-
-    triangle.v2.tangent = triangle.v1.tangent;
-    triangle.v2.bitangent = triangle.v1.bitangent;
-
-    triangle.v3.tangent = triangle.v1.tangent;
-    triangle.v3.bitangent = triangle.v1.bitangent;
-
-    // Transform to NDC - TODO: should not be here!
-    float invW1 = 1.0f / triangle.v1.position.w;
-    float invW2 = 1.0f / triangle.v2.position.w;
-    float invW3 = 1.0f / triangle.v3.position.w;
-
-    triangle.v1.tangent = tangent * invW1; triangle.v1.bitangent = bitangent * invW1;
-    triangle.v2.tangent = tangent * invW2; triangle.v2.bitangent = bitangent * invW2;
-    triangle.v3.tangent = tangent * invW3; triangle.v3.bitangent = bitangent * invW3;
-    // ---------------------------------------------------
 
     m_VSOutputTriangles.push_back(triangle);
   }
@@ -242,9 +214,9 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
 
           vertex.worldPosition = w1 * triangle.v1.worldPosition + w2 * triangle.v2.worldPosition + w3 * triangle.v3.worldPosition;
           vertex.normal = w1 * triangle.v1.normal + w2 * triangle.v2.normal + w3 * triangle.v3.normal;
-          vertex.uv = w1 * triangle.v1.uv + w2 * triangle.v2.uv + w3 * triangle.v3.uv;
           vertex.tangent = w1 * triangle.v1.tangent + w2 * triangle.v2.tangent + w3 * triangle.v3.tangent;
           vertex.bitangent = w1 * triangle.v1.bitangent + w2 * triangle.v2.bitangent + w3 * triangle.v3.bitangent;
+          vertex.uv = w1 * triangle.v1.uv + w2 * triangle.v2.uv + w3 * triangle.v3.uv;
 
           vertex.worldPosition *= invW;
           vertex.normal *= invW;

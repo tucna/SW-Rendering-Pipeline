@@ -117,11 +117,15 @@ public:
       {
         const aiVector3D& v = mesh->mVertices[vertexID];
         const aiVector3D& n = mesh->mNormals[vertexID];
+        const aiVector3D& t = mesh->mTangents[vertexID];
+        const aiVector3D& b = mesh->mBitangents[vertexID];
         const aiVector3D& uv = mesh->mTextureCoords[0][vertexID];
 
         Vertex vertex;
         vertex.position = { v.x, v.y, v.z };
         vertex.normal = { n.x, n.y, n.z };
+        vertex.tangent = { t.x, t.y, t.z };
+        vertex.bitangent = { b.x, b.y, b.z };
         vertex.uv = { uv.x, uv.y };
 
         m_sortedVerticesByMaterial[mesh->mMaterialIndex].push_back(vertex);
