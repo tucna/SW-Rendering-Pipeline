@@ -128,6 +128,8 @@ public:
     if (GetKey(tDX::SHIFT).bHeld) { coeficient *= 8; }
     if (GetKey(tDX::W).bHeld) { MoveCamera({ 0, 0, -coeficient}); }
     if (GetKey(tDX::S).bHeld) { MoveCamera({ 0, 0, coeficient }); }
+    if (GetKey(tDX::Z).bHeld) { MoveModel({ 0, coeficient, 0 }); }
+    if (GetKey(tDX::C).bHeld) { MoveModel({ 0, -coeficient, 0 }); }
     if (GetKey(tDX::E).bHeld) { RotateModel({ 0, coeficient * 15, 0 }); }
     if (GetKey(tDX::Q).bHeld) { RotateModel({ 0, -coeficient * 15, 0 }); }
     if (GetKey(tDX::R).bHeld) { RotateModel({ coeficient * 15, 0, 0 }); }
@@ -148,6 +150,7 @@ public:
   void MoveCamera(float3 translation) { m_eye += translation; }
   void MoveLight(float3 translation) { m_lightTranslation += translation; }
   void RotateModel(float3 rotation) { m_rotation += rotation; }
+  void MoveModel(float3 translation) { m_translation += translation; }
 
   string ReturnObjPath(const string& directory)
   {

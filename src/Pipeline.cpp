@@ -46,10 +46,10 @@ Pipeline::VSOutput Pipeline::VertexShader(const Vertex& vertex)
   output.position = m_mvpMatrix * float4(vertex.position, 1.0f);
 
   float4 wp = m_modelMatrix * float4(vertex.position, 1.0f);
-  output.worldPosition = { wp.x, wp.y, wp.z };
+  output.worldPosition = wp.xyz();
 
   float4 n = m_modelMatrix * float4(vertex.normal, 0.0f);
-  output.normal = {n.x, n.y, n.z};
+  output.normal = n.xyz();
 
   output.uv = vertex.uv;
 
@@ -77,16 +77,27 @@ float4 Pipeline::PixelShader(VSOutput& psinput)
 
   float3 ambient = m_reflectance.Ka * lightAmbient * objectAmbient;
 
-  float3 normal;
+  float3 normal = normalize(psinput.normal);
 
   if (m_textures->Bump_map)
   {
+    float3 N = normal;
+    float3 B = normalize(psinput.bitangent);
+    float3 T = normalize(psinput.tangent);
+
+    float4x4 TBN =
+    { {
+      {{ T.x, B.x, N.x, 0 }},
+      {{ T.y, B.y, N.y, 0 }},
+      {{ T.z, B.z, N.z, 0 }},
+      {{ 0  , 0  , 0  , 1 }},
+    } };
+
     normal = sample(m_textures->Bump_map, { m_textures->texturesWidth, m_textures->texturesHeight }, psinput.uv);
     normal = normalize(normal * 2.0f - 1.0f);
     normal.y = -normal.y;
+    normal = normalize(float4(TBN * float4(normal, 0.0f)).xyz());
   }
-  else
-    normal = normalize(psinput.normal);
 
   float3 lightDir = normalize(m_lightPosition - psinput.worldPosition);
 
@@ -133,6 +144,43 @@ void Pipeline::PrimitiveAssembly()
     FillUpData(triangle.v1, index + 0);
     FillUpData(triangle.v2, index + 1);
     FillUpData(triangle.v3, index + 2);
+
+    // TODO: this is wasteful to recompute again and again
+    float3 edge1 = float4(triangle.v2.position - triangle.v1.position).xyz();
+    float3 edge2 = float4(triangle.v3.position - triangle.v1.position).xyz();
+    float2 deltaUV1 = triangle.v2.uv - triangle.v1.uv;
+    float2 deltaUV2 = triangle.v3.uv - triangle.v1.uv;
+
+    float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+
+    float3 tangent, bitangent;
+
+    tangent.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
+    tangent.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
+    tangent.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+
+    bitangent.x = f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
+    bitangent.y = f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
+    bitangent.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
+
+    triangle.v1.tangent = float4(m_modelMatrix * float4(tangent, 0.0f)).xyz();
+    triangle.v1.bitangent = float4(m_modelMatrix * float4(bitangent, 0.0f)).xyz();
+
+    triangle.v2.tangent = triangle.v1.tangent;
+    triangle.v2.bitangent = triangle.v1.bitangent;
+
+    triangle.v3.tangent = triangle.v1.tangent;
+    triangle.v3.bitangent = triangle.v1.bitangent;
+
+    // Transform to NDC - TODO: should not be here!
+    float invW1 = 1.0f / triangle.v1.position.w;
+    float invW2 = 1.0f / triangle.v2.position.w;
+    float invW3 = 1.0f / triangle.v3.position.w;
+
+    triangle.v1.tangent = tangent * invW1; triangle.v1.bitangent = bitangent * invW1;
+    triangle.v2.tangent = tangent * invW2; triangle.v2.bitangent = bitangent * invW2;
+    triangle.v3.tangent = tangent * invW3; triangle.v3.bitangent = bitangent * invW3;
+    // ---------------------------------------------------
 
     m_VSOutputTriangles.push_back(triangle);
   }
@@ -195,10 +243,14 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
           vertex.worldPosition = w1 * triangle.v1.worldPosition + w2 * triangle.v2.worldPosition + w3 * triangle.v3.worldPosition;
           vertex.normal = w1 * triangle.v1.normal + w2 * triangle.v2.normal + w3 * triangle.v3.normal;
           vertex.uv = w1 * triangle.v1.uv + w2 * triangle.v2.uv + w3 * triangle.v3.uv;
+          vertex.tangent = w1 * triangle.v1.tangent + w2 * triangle.v2.tangent + w3 * triangle.v3.tangent;
+          vertex.bitangent = w1 * triangle.v1.bitangent + w2 * triangle.v2.bitangent + w3 * triangle.v3.bitangent;
 
           vertex.worldPosition *= invW;
           vertex.normal *= invW;
           vertex.uv *= invW;
+          vertex.tangent *= invW;
+          vertex.bitangent *= invW;
 
           float4 color = PixelShader(vertex);
           OutputMerger(x, y, color);

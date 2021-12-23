@@ -35,6 +35,8 @@ private:
     math::float3 worldPosition;
     math::float2 uv;
     math::float3 normal;
+    math::float3 tangent;
+    math::float3 bitangent;
   };
 
   struct VSOutputTriangle

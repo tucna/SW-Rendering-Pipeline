@@ -11,6 +11,31 @@ constexpr float PI = 3.14159265358979323846f;
 
 using float4x4 = std::array<std::array<float, 4>, 4>;
 
+/*
+template<class T, uint8_t M> struct vec;
+
+template<class T>
+struct vec<T,2>
+{
+  T x, y;
+};
+
+template<class T>
+struct vec<T, 3>
+{
+  T x, y, z;
+};
+
+template<class T>
+struct vec<T, 4>
+{
+  T x, y, z, w;
+  vec<T, 3> xyz() { return {x, y, z}; }
+};
+
+typedef vec<float, 2> float2;
+*/
+
 struct float2 { float x, y; };
 struct float3 { float x, y, z; };
 struct float4
@@ -24,6 +49,8 @@ struct float4
   float4() { x = 0; y = 0; z = 0; w = 0; }
   float4(float _x, float _y, float _z, float _w) { x = _x; y = _y; z = _z; w = _w; }
   float4(float3 xyz, float _w) { x = xyz.x; y = xyz.y; z = xyz.z; w = _w; }
+
+  float3 xyz() { return {x, y, z}; }
 };
 
 struct byte4 { uint8_t r, g, b, a; };
@@ -67,6 +94,8 @@ inline float3 operator-(const float3 &v1, float s1) { return { v1.x - s1, v1.y -
 inline float3 operator*(const float3 &v1, float s1) { return { v1.x * s1, v1.y * s1, v1.z * s1 }; }
 inline float3 operator*(const float3 &v1, const float3 &v2) { return { v1.x * v2.x, v1.y * v2.y, v1.z * v2.z }; }
 
+inline float4 operator-(const float4 &v1, const float4 &v2) { return { v1.x - v2.x, v1.y - v2.y, v1.z - v2.z, v1.w - v2.w }; }
+
 inline float3& operator+=(float3& v1, const float3& v2)
 {
   v1.x = v1.x + v2.x;
@@ -86,6 +115,7 @@ inline float2& operator-=(float2& v1, const float2& v2)
 
 inline float2 operator+(const float2& v1, const float s1) { return { v1.x + s1, v1.y + s1 }; }
 inline float2 operator+(const float2& v1, const float2& v2) { return { v1.x + v2.x, v1.y + v2.y }; }
+inline float2 operator-(const float2& v1, const float2& v2) { return { v1.x - v2.x, v1.y - v2.y }; }
 inline float2 operator*(float s1, const float2 &v1) { return { v1.x * s1, v1.y * s1 }; }
 inline float2 operator/(const float2& v1, const float s1) { return { v1.x / s1, v1.y / s1 }; }
 
