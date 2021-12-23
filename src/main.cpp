@@ -1,6 +1,6 @@
 #define T_PGE_APPLICATION
 #include "../engine/tPixelGameEngine.h"
-#include "OBJ_Loader.h"
+//#include "OBJ_Loader.h"
 
 #include "Math.h"
 #include "Pipeline.h"
@@ -11,8 +11,17 @@
 #include <unordered_map>
 #include <vector>
 
+// Assimp
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/material.h>
+#include <assimp/postprocess.h>
+#include <assimp/matrix4x4.h>
+#include <assimp/cimport.h>
+
 using namespace std;
 using namespace math;
+using namespace Assimp;
 
 class Light : public tDX::PixelGameEngine
 {
@@ -24,21 +33,49 @@ public:
 
   bool OnUserCreate() override
   {
+    m_modelScene = m_importer.ReadFile("res/wall/wall.obj",
+      aiProcess_PreTransformVertices |
+      aiProcess_CalcTangentSpace |
+      aiProcess_GenSmoothNormals |
+      aiProcess_Triangulate |
+      aiProcess_FixInfacingNormals |
+      aiProcess_FindInvalidData |
+      aiProcess_ValidateDataStructure
+    );
+
     m_screenWidth = ScreenWidth();
     m_screenHeight = ScreenHeight();
     m_aspectRatio = (float)m_screenWidth / (float)m_screenHeight;
 
     m_pipeline = make_unique<Pipeline>();
-    m_loader = make_unique<objl::Loader>();
+    //m_loader = make_unique<objl::Loader>();
 
     string directory = "wall";
-    m_loader->LoadFile(ReturnObjPath(directory));
+    //m_loader->LoadFile(ReturnObjPath(directory));
 
     m_depthBuffer = new float[m_screenWidth * m_screenHeight];
     m_renderTarget = make_unique<tDX::Sprite>(m_screenWidth, m_screenHeight);
 
-    m_PSTexturesSprites.resize(m_loader->LoadedMaterials.size());
+    //m_PSTexturesSprites.resize(m_loader->LoadedMaterials.size());
+    m_PSTexturesSprites.resize(m_modelScene->mNumMaterials);
 
+    for (size_t materialID = 0; materialID < m_modelScene->mNumMaterials; materialID++)
+    {
+      const aiMaterial* mtl = m_modelScene->mMaterials[materialID];
+      aiString texPath;
+      aiString name = mtl->GetName();
+
+      if (mtl->GetTexture(aiTextureType_AMBIENT, 0, &texPath) == AI_SUCCESS)
+        m_PSTexturesSprites[materialID][MapType::Ka_map].LoadFromFile("res/" + directory + "/" + texPath.C_Str());
+      if (mtl->GetTexture(aiTextureType_DIFFUSE, 0, &texPath) == AI_SUCCESS)
+        m_PSTexturesSprites[materialID][MapType::Kd_map].LoadFromFile("res/" + directory + "/" + texPath.C_Str());
+      if (mtl->GetTexture(aiTextureType_SPECULAR, 0, &texPath) == AI_SUCCESS)
+        m_PSTexturesSprites[materialID][MapType::Ks_map].LoadFromFile("res/" + directory + "/" + texPath.C_Str());
+      if (mtl->GetTexture(aiTextureType_HEIGHT, 0, &texPath) == AI_SUCCESS)
+        m_PSTexturesSprites[materialID][MapType::Bump_map].LoadFromFile("res/" + directory + "/" + texPath.C_Str());
+    };
+
+    /*
     for (size_t materialID = 0; materialID < m_PSTexturesSprites.size(); materialID++)
     {
       if (m_loader->LoadedMaterials[materialID].map_Ka.size() > 0)
@@ -50,8 +87,10 @@ public:
       if (m_loader->LoadedMaterials[materialID].map_bump.size() > 0)
         m_PSTexturesSprites[materialID][MapType::Bump_map].LoadFromFile("res/" + directory + "/" + m_loader->LoadedMaterials[materialID].map_bump);
     };
+    */
 
-    if (m_loader->LoadedMaterials.empty())
+    /* TODO assimp
+    if (m_modelScene->mNumMaterials == 0)
     {
       // Create default material
       objl::Material defaultMaterial = {};
@@ -61,37 +100,35 @@ public:
 
       m_loader->LoadedMaterials.push_back(defaultMaterial);
     }
+    */
 
-    size_t materialsNum = m_loader->LoadedMaterials.size() + 1; // One more for light
+    //size_t materialsNum = m_loader->LoadedMaterials.size() + 1; // One more for light
+    size_t materialsNum = m_modelScene->mNumMaterials; // One more for light
 
     m_sortedVerticesByMaterial.resize(materialsNum);
     m_sortedIndicesByMaterial.resize(materialsNum);
 
-    for (auto& mesh : m_loader->LoadedMeshes)
+    //for (auto& mesh : m_loader->LoadedMeshes)
+    for (size_t meshID = 0; meshID < m_modelScene->mNumMeshes; meshID++)
     {
-      if (mesh.MeshMaterial.name.empty())
-        mesh.MeshMaterial.name = "#default";
+      const aiMesh* mesh = m_modelScene->mMeshes[meshID];
 
-      for (size_t materialID = 0; materialID < materialsNum - 1; materialID++) // We can skip last material - light
+      for (size_t vertexID = 0; vertexID < mesh->mNumVertices; vertexID++)
       {
-        if (mesh.MeshMaterial.name == m_loader->LoadedMaterials[materialID].name)
-        {
-          for (auto& v : mesh.Vertices)
-          {
-            Vertex vertex;
-            vertex.position = { v.Position.X, v.Position.Y, v.Position.Z };
-            vertex.normal = { v.Normal.X, v.Normal.Y, v.Normal.Z };
-            vertex.uv = { v.TextureCoordinate.X, v.TextureCoordinate.Y };
+        const aiVector3D& v = mesh->mVertices[vertexID];
+        const aiVector3D& n = mesh->mNormals[vertexID];
+        const aiVector3D& uv = mesh->mTextureCoords[0][vertexID];
 
-            m_sortedVerticesByMaterial[materialID].push_back(vertex);
-          }
+        Vertex vertex;
+        vertex.position = { v.x, v.y, v.z };
+        vertex.normal = { n.x, n.y, n.z };
+        vertex.uv = { uv.x, uv.y };
 
-          for (auto& i : mesh.Indices)
-            m_sortedIndicesByMaterial[materialID].push_back(i);
-        }
+        m_sortedVerticesByMaterial[mesh->mMaterialIndex].push_back(vertex);
       }
     }
 
+    /*
     objl::Material lightMaterial = {};
     lightMaterial.name = "light";
     lightMaterial.Ka = { 1.0f, 1.0f, 1.0f };
@@ -108,6 +145,7 @@ public:
     m_sortedIndicesByMaterial[lightMaterialID].push_back((uint32_t)m_sortedVerticesByMaterial[0].size() - 3);
     m_sortedIndicesByMaterial[lightMaterialID].push_back((uint32_t)m_sortedVerticesByMaterial[0].size() - 2);
     m_sortedIndicesByMaterial[lightMaterialID].push_back((uint32_t)m_sortedVerticesByMaterial[0].size() - 1);
+    */
 
     PlaceModelToCenter();
 
@@ -174,7 +212,8 @@ public:
 
     m_pipeline->ClearDepthBuffer();
 
-    uint8_t materialsNum = m_drawLight ? (uint8_t)m_loader->LoadedMaterials.size() : (uint8_t)m_loader->LoadedMaterials.size() - 1;
+    //uint8_t materialsNum = m_drawLight ? (uint8_t)m_loader->LoadedMaterials.size() : (uint8_t)m_loader->LoadedMaterials.size() - 1;
+    uint8_t materialsNum = m_modelScene->mNumMaterials;
 
     MaterialReflectance reflectance = {};
 
@@ -182,11 +221,24 @@ public:
     {
       m_pipeline->SetIAInput(m_sortedVerticesByMaterial[materialID], m_sortedIndicesByMaterial[materialID]);
 
+      const aiMaterial* mtl = m_modelScene->mMaterials[materialID];
+      aiColor4D color;
+
+      if (mtl->Get(AI_MATKEY_COLOR_AMBIENT, color) == AI_SUCCESS)
+        reflectance.Ka = { color.r, color.g, color.b };
+      if (mtl->Get(AI_MATKEY_COLOR_DIFFUSE, color) == AI_SUCCESS)
+        reflectance.Kd = { color.r, color.g, color.b };
+      if (mtl->Get(AI_MATKEY_COLOR_SPECULAR, color) == AI_SUCCESS)
+        reflectance.Ks = { color.r, color.g, color.b };
+
+      /*
       reflectance.Ka = { m_loader->LoadedMaterials[materialID].Ka.X, m_loader->LoadedMaterials[materialID].Ka.Y, m_loader->LoadedMaterials[materialID].Ka.Z };
       reflectance.Kd = { m_loader->LoadedMaterials[materialID].Kd.X, m_loader->LoadedMaterials[materialID].Kd.Y, m_loader->LoadedMaterials[materialID].Kd.Z };
       reflectance.Ks = { m_loader->LoadedMaterials[materialID].Ks.X, m_loader->LoadedMaterials[materialID].Ks.Y, m_loader->LoadedMaterials[materialID].Ks.Z };
+      */
 
-      if (materialID == m_loader->LoadedMaterials.size() - 1) // Light
+      /*
+      if (materialID == materialsNum) // TODO: Light
       {
         m_pipeline->SetVSBuffers(m_mvpLightMatrix, m_viewMatrix, m_modelMatrix);
 
@@ -198,6 +250,7 @@ public:
         m_materialTextures.texturesWidth = 0;
       }
       else
+      */
       {
         m_materialTextures.Ka_map = (byte4*)m_PSTexturesSprites[materialID][MapType::Ka_map].GetData();
         m_materialTextures.Kd_map = (byte4*)m_PSTexturesSprites[materialID][MapType::Kd_map].GetData();
@@ -223,15 +276,22 @@ public:
     float3 maxCoords = { numeric_limits<float>::min(), numeric_limits<float>::min(), numeric_limits<float>::min() };
     float3 minCoords = { numeric_limits<float>::max(), numeric_limits<float>::max(), numeric_limits<float>::max() };
 
-    for (const auto& vertex : m_loader->LoadedVertices)
+    for (size_t meshID = 0; meshID < m_modelScene->mNumMeshes; meshID++)
     {
-      maxCoords.x = max(maxCoords.x, vertex.Position.X);
-      maxCoords.y = max(maxCoords.y, vertex.Position.Y);
-      maxCoords.z = max(maxCoords.z, vertex.Position.Z);
+      const aiMesh* mesh = m_modelScene->mMeshes[meshID];
 
-      minCoords.x = min(minCoords.x, vertex.Position.X);
-      minCoords.y = min(minCoords.y, vertex.Position.Y);
-      minCoords.z = min(minCoords.z, vertex.Position.Z);
+      for (size_t vertexID = 0; vertexID < mesh->mNumVertices; vertexID++)
+      {
+        const aiVector3D& v = mesh->mVertices[vertexID];
+
+        maxCoords.x = max(maxCoords.x, v.x);
+        maxCoords.y = max(maxCoords.y, v.y);
+        maxCoords.z = max(maxCoords.z, v.z);
+
+        minCoords.x = min(minCoords.x, v.x);
+        minCoords.y = min(minCoords.y, v.y);
+        minCoords.z = min(minCoords.z, v.z);
+      }
     }
 
     m_translation.x = -(minCoords.x + maxCoords.x) / 2.0f;
@@ -327,7 +387,7 @@ private:
 
   vector<std::unordered_map<MapType, tDX::Sprite>> m_PSTexturesSprites;
 
-  std::unique_ptr<objl::Loader> m_loader;
+  //std::unique_ptr<objl::Loader> m_loader;
   std::unique_ptr<Pipeline> m_pipeline;
 
   // Matrices
@@ -361,6 +421,9 @@ private:
   MaterialTextures m_materialTextures;
 
   bool m_drawLight = false;
+
+  Assimp::Importer  m_importer;
+  const aiScene* m_modelScene;
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
