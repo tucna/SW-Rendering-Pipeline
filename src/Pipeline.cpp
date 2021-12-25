@@ -23,7 +23,7 @@ void Pipeline::Draw()
   {
     VSOutput output = VertexShader(m_vertices->at(vertexID));
 
-    PostVertexShader(output);
+    //PostVertexShader(output); TODO delete this "stage"
 
     m_VSOutputs.push_back(output);
   }
@@ -161,12 +161,58 @@ void Pipeline::PrimitiveAssembly()
     FillUpData(triangle.v2, index + 1);
     FillUpData(triangle.v3, index + 2);
 
+    // cull tests
+    if (triangle.v1.position.x > triangle.v1.position.w &&
+        triangle.v2.position.x > triangle.v2.position.w &&
+        triangle.v3.position.x > triangle.v3.position.w)
+      continue;
+
+    if (triangle.v1.position.x < -triangle.v1.position.w &&
+        triangle.v2.position.x < -triangle.v2.position.w &&
+        triangle.v3.position.x < -triangle.v3.position.w)
+      continue;
+
+    if (triangle.v1.position.y > triangle.v1.position.w &&
+        triangle.v2.position.y > triangle.v2.position.w &&
+        triangle.v3.position.y > triangle.v3.position.w)
+      continue;
+
+    if (triangle.v1.position.y < -triangle.v1.position.w &&
+        triangle.v2.position.y < -triangle.v2.position.w &&
+        triangle.v3.position.y < -triangle.v3.position.w)
+      continue;
+
+    if (triangle.v1.position.z > triangle.v1.position.w &&
+        triangle.v2.position.z > triangle.v2.position.w &&
+        triangle.v3.position.z > triangle.v3.position.w)
+      continue;
+
+    if (triangle.v1.position.z < 0.0f &&
+        triangle.v2.position.z < 0.0f &&
+        triangle.v3.position.z < 0.0f)
+      continue;
+
     m_VSOutputTriangles.push_back(triangle);
   }
 }
 
 void Pipeline::Rasterizer(VSOutputTriangle& triangle)
 {
+  auto ToNDCAndPerspectiveCorrection = [](VSOutput& vertex)
+  {
+    float invW = 1.0f / vertex.position.w;
+
+    // Everything from vsoutput must be processed TODO: template?
+    vertex.position *= invW;
+    vertex.normal *= invW;
+    vertex.tangent *= invW;
+    vertex.bitangent *= invW;
+    vertex.uv *= invW;
+    vertex.worldPosition *= invW;
+
+    vertex.position.w = invW;
+  };
+
   auto ToScreenSpace = [&](float4& position)
   {
     position.x = (position.x + 1.0f) * m_viewportWidth * 0.5f;
@@ -177,6 +223,11 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
   {
     return (v3.x - v1.x) * (v2.y - v1.y) - (v3.y - v1.y) * (v2.x - v1.x);
   };
+
+  // Transform
+  ToNDCAndPerspectiveCorrection(triangle.v1);
+  ToNDCAndPerspectiveCorrection(triangle.v2);
+  ToNDCAndPerspectiveCorrection(triangle.v3);
 
   ToScreenSpace(triangle.v1.position);
   ToScreenSpace(triangle.v2.position);

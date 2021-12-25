@@ -156,7 +156,7 @@ public:
     return true;
   }
 
-  void MoveCamera(float3 translation) { m_eye += translation; }
+  void MoveCamera(float3 translation) { m_eye += translation; m_target += translation; }
   void MoveLight(float3 translation) { m_lightTranslation += translation; }
   void RotateModel(float3 rotation) { m_rotation += rotation; }
   void MoveModel(float3 translation) { m_translation += translation; }
