@@ -84,9 +84,9 @@ public:
       {
         const aiVector3D& v = mesh->mVertices[vertexID];
         const aiVector3D& n = mesh->mNormals[vertexID];
-        const aiVector3D& t = mesh->mTangents[vertexID];
-        const aiVector3D& b = mesh->mBitangents[vertexID];
-        const aiVector3D& uv = mesh->mTextureCoords[0][vertexID];
+        const aiVector3D& t = mesh->mTangents ? mesh->mTangents[vertexID] : aiVector3D(0, 0, 0);
+        const aiVector3D& b = mesh->mBitangents ? mesh->mBitangents[vertexID] : aiVector3D(0, 0, 0);
+        const aiVector3D& uv = mesh->mTextureCoords[0] ? mesh->mTextureCoords[0][vertexID] : aiVector3D(0,0,0);
 
         Vertex vertex;
         vertex.position = { v.x, v.y, v.z };
