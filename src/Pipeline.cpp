@@ -55,6 +55,9 @@ Pipeline::VSOutput Pipeline::VertexShader(const Vertex& vertex)
 
 float4 Pipeline::PixelShader(VSOutput& psinput)
 {
+  //return float4(1,0,0,1);
+  //return float4(normalize(psinput.normal) * 0.5f + 0.5f,1.0f);
+
   const float3 lightAmbient  = { 0.2f, 0.2f, 0.2f };
   const float3 lightDiffuse  = { 0.8f, 0.8f, 0.8f };
   const float3 lightSpecular = { 1.0f, 1.0f, 1.0f };
@@ -112,7 +115,7 @@ float4 Pipeline::PixelShader(VSOutput& psinput)
 
   float3 specular = m_reflectance.Ks * spec * lightSpecular * objectSpecular;
 
-  float3 result = saturate(ambient + diffuse * 3 + specular);
+  float3 result = saturate(ambient + diffuse + specular);
   return float4(result, 1.0f);
 }
 
@@ -176,12 +179,11 @@ void Pipeline::PrimitiveAssembly()
       // interpolate to get v0a and v0b
       const auto v0a = interpolate(v1, v2, alphaA);
       const auto v0b = interpolate(v1, v3, alphaB);
-      // draw triangles
-      //PostProcessTriangleVertices(Triangle<GSOut>{ v0a, v1, v2 });
-      //PostProcessTriangleVertices(Triangle<GSOut>{ v0b, v0a, v2 });
+
       m_VSOutputTriangles.push_back({ v0a, v2, v3 });
       m_VSOutputTriangles.push_back({ v0b, v0a, v3 });
     };
+
     const auto Clip2 = [&](VSOutput& v1, VSOutput& v2, VSOutput& v3)
     {
       // calculate alpha values for getting adjusted vertices
@@ -190,8 +192,7 @@ void Pipeline::PrimitiveAssembly()
       // interpolate to get v0a and v0b
       v1 = interpolate(v1, v3, alpha0);
       v2 = interpolate(v2, v3, alpha1);
-      // draw triangles
-      //PostProcessTriangleVertices(Triangle<GSOut>{ v0, v1, v2 });
+
       m_VSOutputTriangles.push_back({ v1, v2, v3 });
     };
 
@@ -199,39 +200,27 @@ void Pipeline::PrimitiveAssembly()
     if (triangle.v1.position.z < 0.0f)
     {
       if (triangle.v2.position.z < 0.0f)
-      {
         Clip2(triangle.v1, triangle.v2, triangle.v3);
-      }
       else if (triangle.v3.position.z < 0.0f)
-      {
         Clip2(triangle.v1, triangle.v3, triangle.v2);
-      }
       else
-      {
         Clip1(triangle.v1, triangle.v2, triangle.v3);
-      }
     }
     else if (triangle.v2.position.z < 0.0f)
     {
       if (triangle.v3.position.z < 0.0f)
-      {
         Clip2(triangle.v2, triangle.v3, triangle.v1);
-      }
       else
-      {
         Clip1(triangle.v2, triangle.v1, triangle.v3);
-      }
     }
     else if (triangle.v3.position.z < 0.0f)
-    {
       Clip1(triangle.v3, triangle.v1, triangle.v2);
-    }
     else // no near clipping necessary
-    {
-      //PostProcessTriangleVertices(t);
       m_VSOutputTriangles.push_back(triangle);
-    }
+
+    //m_VSOutputTriangles.push_back(triangle);
   }
+
 }
 
 void Pipeline::Rasterizer(VSOutputTriangle& triangle)
@@ -260,6 +249,7 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
   auto EdgeFunction = [](const float3& v1, const float3& v2, const float3& v3) -> float
   {
     return (v3.x - v1.x) * (v2.y - v1.y) - (v3.y - v1.y) * (v2.x - v1.x);
+    //return (v1.x - v2.x) * (v3.y - v1.y) - (v1.y - v2.y) * (v3.x - v1.x);
   };
 
   // Transform
@@ -298,12 +288,16 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
     {
       // Barycentric interpolation
       float3 p = {x + 0.5f, y + 0.5f, 0.0f};
-      float w1 = EdgeFunction(v2, v3, p) / area;
-      float w2 = EdgeFunction(v3, v1, p) / area;
-      float w3 = EdgeFunction(v1, v2, p) / area;
+      float w1 = EdgeFunction(v2, v3, p);
+      float w2 = EdgeFunction(v3, v1, p);
+      float w3 = EdgeFunction(v1, v2, p);
 
       if (w1 < 0 || w2 < 0 || w3 < 0)
         continue;
+
+      w1 /= area;
+      w2 /= area;
+      w3 /= area;
 
       float z = w1 * v1.z + w2 * v2.z + w3 * v3.z;
 

@@ -38,7 +38,7 @@ public:
 
     m_pipeline = make_unique<Pipeline>();
 
-    string directory = "sponza";
+    string directory = "backpack";
     m_modelScene = m_importer.ReadFile(ReturnObjPath(directory),
       aiProcess_PreTransformVertices |
       aiProcess_CalcTangentSpace |
@@ -138,10 +138,10 @@ public:
     if (GetKey(tDX::S).bHeld) { MoveCamera({ 0, 0, coeficient }); }
     if (GetKey(tDX::Z).bHeld) { MoveModel({ 0, coeficient, 0 }); }
     if (GetKey(tDX::C).bHeld) { MoveModel({ 0, -coeficient, 0 }); }
-    if (GetKey(tDX::E).bHeld) { RotateModel({ 0, coeficient * 15, 0 }); }
-    if (GetKey(tDX::Q).bHeld) { RotateModel({ 0, -coeficient * 15, 0 }); }
-    if (GetKey(tDX::R).bHeld) { RotateModel({ coeficient * 15, 0, 0 }); }
-    if (GetKey(tDX::F).bHeld) { RotateModel({ -coeficient * 15, 0, 0 }); }
+    if (GetKey(tDX::E).bHeld) { RotateModel({ 0, coeficient, 0 }); }
+    if (GetKey(tDX::Q).bHeld) { RotateModel({ 0, -coeficient, 0 }); }
+    if (GetKey(tDX::R).bHeld) { RotateModel({ coeficient, 0, 0 }); }
+    if (GetKey(tDX::F).bHeld) { RotateModel({ -coeficient, 0, 0 }); }
     if (GetKey(tDX::NP6).bHeld) { MoveLight({ coeficient, 0, 0 }); }
     if (GetKey(tDX::NP4).bHeld) { MoveLight({ -coeficient, 0, 0 }); }
     if (GetKey(tDX::NP5).bHeld) { MoveLight({ 0, -coeficient, 0 }); }
@@ -264,8 +264,7 @@ public:
 
     float cameraPosZ = max(max(maxCoords.x, maxCoords.y), maxCoords.z) * 2.0f;
 
-    //m_eye.z = maxCoords.z + cameraPosZ;
-    m_eye.z = maxCoords.z;
+    m_eye.z = maxCoords.z + cameraPosZ;
     m_lightTranslation = { 0, 0, m_eye.z };
   }
 
@@ -324,7 +323,7 @@ public:
     // Projection
     const float fovY = 45.0f;
     const float n = 0.1f;
-    const float f = 100.0f;
+    const float f = 10000.0f;
     const float tan_fovY = tan(toRad(fovY / 2.0f));
 
     m_projectionMatrix =
