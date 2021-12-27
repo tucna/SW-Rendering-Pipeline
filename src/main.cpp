@@ -264,7 +264,8 @@ public:
 
     float cameraPosZ = max(max(maxCoords.x, maxCoords.y), maxCoords.z) * 2.0f;
 
-    m_eye.z = maxCoords.z + cameraPosZ;
+    //m_eye.z = maxCoords.z + cameraPosZ;
+    m_eye.z = maxCoords.z;
     m_lightTranslation = { 0, 0, m_eye.z };
   }
 

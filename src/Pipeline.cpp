@@ -136,7 +136,7 @@ void Pipeline::PrimitiveAssembly()
     FillUpData(triangle.v2, index + 1);
     FillUpData(triangle.v3, index + 2);
 
-    // cull tests
+    // Cull
     if (triangle.v1.position.x > triangle.v1.position.w &&
         triangle.v2.position.x > triangle.v2.position.w &&
         triangle.v3.position.x > triangle.v3.position.w)
@@ -262,9 +262,9 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
 
         vertex.worldPosition *= invW;
         vertex.normal *= invW;
-        vertex.uv *= invW;
         vertex.tangent *= invW;
         vertex.bitangent *= invW;
+        vertex.uv *= invW;
 
         float4 color = PixelShader(vertex);
         OutputMerger(x, y, color);
