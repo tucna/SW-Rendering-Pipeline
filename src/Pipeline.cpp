@@ -1,37 +1,28 @@
 #include <algorithm>
+#include <execution>
 
 #include "Pipeline.h"
 
 using namespace std;
 using namespace math;
 
-void Pipeline::ClearDepthBuffer()
-{
-  for (size_t i = 0; i < m_buffersWidth * m_buffersHeight; i++)
-    m_depthBuffer[i] = std::numeric_limits<float>::infinity();
-}
-
 void Pipeline::Draw()
 {
   // Clean all internal structures
   Cleanup();
 
+  // IA
   InputAssembler();
 
   // VS
-  for (size_t vertexID = 0; vertexID < m_vertices->size(); vertexID++)
-  {
-    VSOutput output = VertexShader(m_vertices->at(vertexID));
+  for (auto& vertex : *m_vertices)
+    m_VSOutputs.push_back(VertexShader(vertex));
 
-    //PostVertexShader(output); TODO delete this "stage"
-
-    m_VSOutputs.push_back(output);
-  }
-
+  // PA
   PrimitiveAssembly();
 
-  for (auto& triangle : m_VSOutputTriangles)
-    Rasterizer(triangle);
+  // RS, PS, OM
+  std::for_each(std::execution::par_unseq, std::begin(m_VSOutputTriangles), std::end(m_VSOutputTriangles), [&](auto& triangle) { Rasterizer(triangle); });
 }
 
 void Pipeline::InputAssembler()
@@ -121,24 +112,8 @@ float4 Pipeline::PixelShader(VSOutput& psinput)
 
   float3 specular = m_reflectance.Ks * spec * lightSpecular * objectSpecular;
 
-  float3 result = saturate(ambient + diffuse * 2 + specular);
+  float3 result = saturate(ambient + diffuse * 3 + specular);
   return float4(result, 1.0f);
-}
-
-void Pipeline::PostVertexShader(VSOutput& vsoutput)
-{
-  // Transform to NDC
-  float invW = 1.0f / vsoutput.position.w;
-
-  // Everything from vsoutput must be processed TODO: template?
-  vsoutput.position *= invW;
-  vsoutput.normal *= invW;
-  vsoutput.tangent *= invW;
-  vsoutput.bitangent *= invW;
-  vsoutput.uv *= invW;
-  vsoutput.worldPosition *= invW;
-
-  vsoutput.position.w = invW;
 }
 
 void Pipeline::PrimitiveAssembly()
@@ -243,52 +218,6 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
   if ((m_culling == Culling::CW && area < 0.0f) || (m_culling == Culling::CCW && area > 0.0f))
     return;
 
-  auto Process = [&](uint16_t minX, uint16_t maxX, uint16_t minY, uint16_t maxY)
-  {
-    for (uint16_t x = minX; x <= maxX; x++)
-    {
-      for (uint16_t y = minY; y <= maxY; y++)
-      {
-        // Barycentric interpolation
-        float3 p = {x + 0.5f, y + 0.5f, 0.0f};
-        float w1 = EdgeFunction(v2, v3, p) / area;
-        float w2 = EdgeFunction(v3, v1, p) / area;
-        float w3 = EdgeFunction(v1, v2, p) / area;
-
-        if (w1 < 0 || w2 < 0 || w3 < 0)
-          continue;
-
-        float z = w1 * v1.z + w2 * v2.z + w3 * v3.z;
-
-        if (z < m_depthBuffer[y * m_buffersWidth + x])
-        {
-          m_depthBuffer[y * m_buffersWidth + x] = z;
-
-          float w = w1 * triangle.v1.position.w + w2 * triangle.v2.position.w + w3 * triangle.v3.position.w;
-          float invW = 1.0f / w;
-
-          VSOutput vertex;
-          vertex.position = { (float)x, (float)y, z, w };
-
-          vertex.worldPosition = w1 * triangle.v1.worldPosition + w2 * triangle.v2.worldPosition + w3 * triangle.v3.worldPosition;
-          vertex.normal = w1 * triangle.v1.normal + w2 * triangle.v2.normal + w3 * triangle.v3.normal;
-          vertex.tangent = w1 * triangle.v1.tangent + w2 * triangle.v2.tangent + w3 * triangle.v3.tangent;
-          vertex.bitangent = w1 * triangle.v1.bitangent + w2 * triangle.v2.bitangent + w3 * triangle.v3.bitangent;
-          vertex.uv = w1 * triangle.v1.uv + w2 * triangle.v2.uv + w3 * triangle.v3.uv;
-
-          vertex.worldPosition *= invW;
-          vertex.normal *= invW;
-          vertex.uv *= invW;
-          vertex.tangent *= invW;
-          vertex.bitangent *= invW;
-
-          float4 color = PixelShader(vertex);
-          OutputMerger(x, y, color);
-        }
-      }
-    }
-  };
-
   // Get the bounding box of the triangle
   int maxX = lround(std::max(v1.x, std::max(v2.x, v3.x)));
   int minX = lround(std::min(v1.x, std::min(v2.x, v3.x)));
@@ -300,22 +229,48 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
   maxY = std::clamp(maxY, 0, m_viewportHeight - 1);
   minY = std::clamp(minY, 0, m_viewportHeight - 1);
 
-  Process(minX, maxX, minY, maxY);
+  for (uint16_t x = minX; x <= maxX; x++)
+  {
+    for (uint16_t y = minY; y <= maxY; y++)
+    {
+      // Barycentric interpolation
+      float3 p = {x + 0.5f, y + 0.5f, 0.0f};
+      float w1 = EdgeFunction(v2, v3, p) / area;
+      float w2 = EdgeFunction(v3, v1, p) / area;
+      float w3 = EdgeFunction(v1, v2, p) / area;
 
-  /* Threads tested
-  uint16_t halfX = (maxX - minX) / 2;
-  uint16_t halfY = (maxY - minY) / 2;
+      if (w1 < 0 || w2 < 0 || w3 < 0)
+        continue;
 
-  m_threads.push_back(thread(Process, minX, minX + halfX, minY, minY + halfY));
-  m_threads.push_back(thread(Process, minX + halfX + 1, maxX, minY, minY + halfY));
-  m_threads.push_back(thread(Process, minX, minX + halfX, minY + halfY + 1, maxY));
-  m_threads.push_back(thread(Process, minX + halfX, maxX, minY + halfY + 1, maxY));
+      float z = w1 * v1.z + w2 * v2.z + w3 * v3.z;
 
-  for (auto& t : m_threads)
-    t.join();
+      if (z < m_depthBuffer[y * m_buffersWidth + x])
+      {
+        m_depthBuffer[y * m_buffersWidth + x] = z;
 
-  m_threads.clear();
-  */
+        float w = w1 * triangle.v1.position.w + w2 * triangle.v2.position.w + w3 * triangle.v3.position.w;
+        float invW = 1.0f / w;
+
+        VSOutput vertex;
+        vertex.position = { (float)x, (float)y, z, w };
+
+        vertex.worldPosition = w1 * triangle.v1.worldPosition + w2 * triangle.v2.worldPosition + w3 * triangle.v3.worldPosition;
+        vertex.normal = w1 * triangle.v1.normal + w2 * triangle.v2.normal + w3 * triangle.v3.normal;
+        vertex.tangent = w1 * triangle.v1.tangent + w2 * triangle.v2.tangent + w3 * triangle.v3.tangent;
+        vertex.bitangent = w1 * triangle.v1.bitangent + w2 * triangle.v2.bitangent + w3 * triangle.v3.bitangent;
+        vertex.uv = w1 * triangle.v1.uv + w2 * triangle.v2.uv + w3 * triangle.v3.uv;
+
+        vertex.worldPosition *= invW;
+        vertex.normal *= invW;
+        vertex.uv *= invW;
+        vertex.tangent *= invW;
+        vertex.bitangent *= invW;
+
+        float4 color = PixelShader(vertex);
+        OutputMerger(x, y, color);
+      }
+    }
+  }
 }
 
 void Pipeline::OutputMerger(uint16_t x, uint16_t y, float4 color)

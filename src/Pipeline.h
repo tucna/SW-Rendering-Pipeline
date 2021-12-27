@@ -25,7 +25,6 @@ public:
   void SetPSBuffers(const math::MaterialReflectance& reflectance, math::MaterialTextures* textures, math::float3 lightPosition, math::float3 cameraPosition) { m_reflectance = reflectance; m_textures = textures; m_lightPosition = lightPosition; m_cameraPosition = cameraPosition; }
   void SetOMBuffers(float* depthBuffer, math::byte4* renderTarget, uint16_t buffersWidth, uint16_t buffersHeight) { m_depthBuffer = depthBuffer; m_renderTarget = renderTarget; m_buffersWidth = buffersWidth; m_buffersHeight = buffersHeight; }
 
-  void ClearDepthBuffer();
   void Draw();
 
 private:
@@ -46,7 +45,6 @@ private:
 
   void InputAssembler();
   VSOutput VertexShader(const math::Vertex& vertex);
-  void PostVertexShader(VSOutput& vsoutput);
   void PrimitiveAssembly();
   void Rasterizer(VSOutputTriangle& triangle);
   math::float4 PixelShader(VSOutput& psinput);
@@ -83,7 +81,5 @@ private:
   math::byte4* m_renderTarget = nullptr;
   uint16_t m_buffersWidth;
   uint16_t m_buffersHeight;
-
-  //std::vector<std::thread> m_threads;
 };
 

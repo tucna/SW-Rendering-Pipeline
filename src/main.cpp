@@ -1,6 +1,5 @@
 #define T_PGE_APPLICATION
 #include "../engine/tPixelGameEngine.h"
-//#include "OBJ_Loader.h"
 
 #include "Math.h"
 #include "Pipeline.h"
@@ -181,7 +180,7 @@ public:
     m_pipeline->SetOMBuffers(m_depthBuffer, (byte4*)m_renderTarget->GetData(), m_screenWidth, m_screenHeight);
     m_pipeline->SetVSBuffers(m_mvpMatrix, m_viewMatrix, m_modelMatrix);
 
-    m_pipeline->ClearDepthBuffer();
+    ClearDepthBuffer();
 
     //uint8_t materialsNum = m_drawLight ? (uint8_t)m_loader->LoadedMaterials.size() : (uint8_t)m_loader->LoadedMaterials.size() - 1;
     uint8_t materialsNum = m_modelScene->mNumMaterials;
@@ -337,6 +336,12 @@ public:
 
     m_mvpMatrix = m_projectionMatrix * m_viewMatrix * m_modelMatrix;
     m_mvpLightMatrix = m_projectionMatrix * m_viewMatrix * m_modelLightMatrix;
+  }
+
+  void ClearDepthBuffer()
+  {
+    for (size_t i = 0; i < m_screenWidth * m_screenHeight; i++)
+      m_depthBuffer[i] = std::numeric_limits<float>::infinity();
   }
 
 private:
