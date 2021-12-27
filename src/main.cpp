@@ -38,7 +38,7 @@ public:
 
     m_pipeline = make_unique<Pipeline>();
 
-    string directory = "nanosuit";
+    string directory = "sponza";
     m_modelScene = m_importer.ReadFile(ReturnObjPath(directory),
       aiProcess_PreTransformVertices |
       aiProcess_CalcTangentSpace |
@@ -322,10 +322,10 @@ public:
     } };
 
     // Projection
-    float fovY = 45.0f;
-    float n = 0.1f;
-    float f = 100.0f;
-    float tan_fovY = tan(toRad(fovY / 2.0f));
+    const float fovY = 45.0f;
+    const float n = 0.1f;
+    const float f = 100.0f;
+    const float tan_fovY = tan(toRad(fovY / 2.0f));
 
     m_projectionMatrix =
     { {

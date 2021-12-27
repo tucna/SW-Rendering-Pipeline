@@ -167,7 +167,70 @@ void Pipeline::PrimitiveAssembly()
         triangle.v3.position.z < 0.0f)
       continue;
 
-    m_VSOutputTriangles.push_back(triangle);
+    // clipping routines
+    const auto Clip1 = [&](VSOutput& v1, VSOutput& v2, VSOutput& v3)
+    {
+      // calculate alpha values for getting adjusted vertices
+      const float alphaA = (-v1.position.z) / (v2.position.z - v1.position.z);
+      const float alphaB = (-v1.position.z) / (v3.position.z - v1.position.z);
+      // interpolate to get v0a and v0b
+      const auto v0a = interpolate(v1, v2, alphaA);
+      const auto v0b = interpolate(v1, v3, alphaB);
+      // draw triangles
+      //PostProcessTriangleVertices(Triangle<GSOut>{ v0a, v1, v2 });
+      //PostProcessTriangleVertices(Triangle<GSOut>{ v0b, v0a, v2 });
+      m_VSOutputTriangles.push_back({ v0a, v2, v3 });
+      m_VSOutputTriangles.push_back({ v0b, v0a, v3 });
+    };
+    const auto Clip2 = [&](VSOutput& v1, VSOutput& v2, VSOutput& v3)
+    {
+      // calculate alpha values for getting adjusted vertices
+      const float alpha0 = (-v1.position.z) / (v3.position.z - v1.position.z);
+      const float alpha1 = (-v2.position.z) / (v3.position.z - v2.position.z);
+      // interpolate to get v0a and v0b
+      v1 = interpolate(v1, v3, alpha0);
+      v2 = interpolate(v2, v3, alpha1);
+      // draw triangles
+      //PostProcessTriangleVertices(Triangle<GSOut>{ v0, v1, v2 });
+      m_VSOutputTriangles.push_back({ v1, v2, v3 });
+    };
+
+    // near clipping tests
+    if (triangle.v1.position.z < 0.0f)
+    {
+      if (triangle.v2.position.z < 0.0f)
+      {
+        Clip2(triangle.v1, triangle.v2, triangle.v3);
+      }
+      else if (triangle.v3.position.z < 0.0f)
+      {
+        Clip2(triangle.v1, triangle.v3, triangle.v2);
+      }
+      else
+      {
+        Clip1(triangle.v1, triangle.v2, triangle.v3);
+      }
+    }
+    else if (triangle.v2.position.z < 0.0f)
+    {
+      if (triangle.v3.position.z < 0.0f)
+      {
+        Clip2(triangle.v2, triangle.v3, triangle.v1);
+      }
+      else
+      {
+        Clip1(triangle.v2, triangle.v1, triangle.v3);
+      }
+    }
+    else if (triangle.v3.position.z < 0.0f)
+    {
+      Clip1(triangle.v3, triangle.v1, triangle.v2);
+    }
+    else // no near clipping necessary
+    {
+      //PostProcessTriangleVertices(t);
+      m_VSOutputTriangles.push_back(triangle);
+    }
   }
 }
 

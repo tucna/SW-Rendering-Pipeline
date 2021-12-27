@@ -19,15 +19,6 @@ public:
     None
   };
 
-  void SetIAInput(const std::vector<math::Vertex>& vertices, const std::vector<uint32_t>& indices) { m_vertices = &vertices; m_indices = &indices; } // m_indices currently not used
-  void SetVSBuffers(math::float4x4 mvpMatrix, math::float4x4 viewMatrix, math::float4x4 modelMatrix) { m_mvpMatrix = mvpMatrix; m_viewMatrix = viewMatrix; m_modelMatrix = modelMatrix; }
-  void SetRSDescriptor(uint16_t viewportWidth, uint16_t viewportHeight, Culling culling) { m_viewportWidth = viewportWidth; m_viewportHeight = viewportHeight; m_culling = culling; }
-  void SetPSBuffers(const math::MaterialReflectance& reflectance, math::MaterialTextures* textures, math::float3 lightPosition, math::float3 cameraPosition) { m_reflectance = reflectance; m_textures = textures; m_lightPosition = lightPosition; m_cameraPosition = cameraPosition; }
-  void SetOMBuffers(float* depthBuffer, math::byte4* renderTarget, uint16_t buffersWidth, uint16_t buffersHeight) { m_depthBuffer = depthBuffer; m_renderTarget = renderTarget; m_buffersWidth = buffersWidth; m_buffersHeight = buffersHeight; }
-
-  void Draw();
-
-private:
   struct VSOutput
   {
     math::float4 position;
@@ -43,6 +34,15 @@ private:
     VSOutput v1, v2, v3;
   };
 
+  void SetIAInput(const std::vector<math::Vertex>& vertices, const std::vector<uint32_t>& indices) { m_vertices = &vertices; m_indices = &indices; } // m_indices currently not used
+  void SetVSBuffers(math::float4x4 mvpMatrix, math::float4x4 viewMatrix, math::float4x4 modelMatrix) { m_mvpMatrix = mvpMatrix; m_viewMatrix = viewMatrix; m_modelMatrix = modelMatrix; }
+  void SetRSDescriptor(uint16_t viewportWidth, uint16_t viewportHeight, Culling culling) { m_viewportWidth = viewportWidth; m_viewportHeight = viewportHeight; m_culling = culling; }
+  void SetPSBuffers(const math::MaterialReflectance& reflectance, math::MaterialTextures* textures, math::float3 lightPosition, math::float3 cameraPosition) { m_reflectance = reflectance; m_textures = textures; m_lightPosition = lightPosition; m_cameraPosition = cameraPosition; }
+  void SetOMBuffers(float* depthBuffer, math::byte4* renderTarget, uint16_t buffersWidth, uint16_t buffersHeight) { m_depthBuffer = depthBuffer; m_renderTarget = renderTarget; m_buffersWidth = buffersWidth; m_buffersHeight = buffersHeight; }
+
+  void Draw();
+
+private:
   void InputAssembler();
   VSOutput VertexShader(const math::Vertex& vertex);
   void PrimitiveAssembly();
@@ -83,3 +83,58 @@ private:
   uint16_t m_buffersHeight;
 };
 
+inline Pipeline::VSOutput operator-(const Pipeline::VSOutput& v1, const Pipeline::VSOutput& v2)
+{
+  Pipeline::VSOutput result = {};
+
+  result.position = v1.position - v2.position;
+  result.worldPosition = v1.worldPosition - v2.worldPosition;
+  result.normal = v1.normal - v2.normal;
+  result.bitangent = v1.bitangent - v2.bitangent;
+  result.tangent = v1.tangent - v2.tangent;
+  result.uv = v1.uv - v2.uv;
+
+  return result;
+}
+
+inline Pipeline::VSOutput operator+(const Pipeline::VSOutput& v1, const Pipeline::VSOutput& v2)
+{
+  Pipeline::VSOutput result = {};
+
+  result.position = v1.position + v2.position;
+  result.worldPosition = v1.worldPosition + v2.worldPosition;
+  result.normal = v1.normal + v2.normal;
+  result.bitangent = v1.bitangent + v2.bitangent;
+  result.tangent = v1.tangent + v2.tangent;
+  result.uv = v1.uv + v2.uv;
+
+  return result;
+}
+
+inline Pipeline::VSOutput operator*(const Pipeline::VSOutput& v1, const Pipeline::VSOutput& v2)
+{
+  Pipeline::VSOutput result = {};
+
+  result.position = v1.position * v2.position;
+  result.worldPosition = v1.worldPosition * v2.worldPosition;
+  result.normal = v1.normal * v2.normal;
+  result.bitangent = v1.bitangent * v2.bitangent;
+  result.tangent = v1.tangent * v2.tangent;
+  result.uv = v1.uv * v2.uv;
+
+  return result;
+}
+
+inline Pipeline::VSOutput operator*(const Pipeline::VSOutput& v1, float s1)
+{
+  Pipeline::VSOutput result = {};
+
+  result.position = v1.position * s1;
+  result.worldPosition = v1.worldPosition * s1;
+  result.normal = v1.normal * s1;
+  result.bitangent = v1.bitangent * s1;
+  result.tangent = v1.tangent * s1;
+  result.uv = v1.uv * s1;
+
+  return result;
+}
