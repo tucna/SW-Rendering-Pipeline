@@ -1,6 +1,14 @@
 #define T_PGE_APPLICATION
 #include "../engine/tPixelGameEngine.h"
 
+// Assimp
+#include "assimp/Importer.hpp"
+#include "assimp/scene.h"
+#include "assimp/material.h"
+#include "assimp/postprocess.h"
+#include "assimp/matrix4x4.h"
+#include "assimp/cimport.h"
+
 #include "Math.h"
 #include "Pipeline.h"
 
@@ -9,14 +17,6 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-
-// Assimp
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/material.h>
-#include <assimp/postprocess.h>
-#include <assimp/matrix4x4.h>
-#include <assimp/cimport.h>
 
 using namespace std;
 using namespace math;
@@ -98,25 +98,6 @@ public:
       }
     }
 
-    /*
-    objl::Material lightMaterial = {};
-    lightMaterial.name = "light";
-    lightMaterial.Ka = { 1.0f, 1.0f, 1.0f };
-    lightMaterial.Kd = { 1.0f, 1.0f, 1.0f };
-
-    m_loader->LoadedMaterials.push_back(lightMaterial);
-
-    uint8_t lightMaterialID = (uint8_t)m_loader->LoadedMaterials.size() - 1;
-
-    m_sortedVerticesByMaterial[lightMaterialID].push_back({ { -0.25f,     0, 0 }, { 0, 1, 0 } });
-    m_sortedVerticesByMaterial[lightMaterialID].push_back({ {  0.25f, -0.25, 0 }, { 0, 1, 0 } });
-    m_sortedVerticesByMaterial[lightMaterialID].push_back({ {  0.25f,  0.25, 0 }, { 0, 1, 0 } });
-
-    m_sortedIndicesByMaterial[lightMaterialID].push_back((uint32_t)m_sortedVerticesByMaterial[0].size() - 3);
-    m_sortedIndicesByMaterial[lightMaterialID].push_back((uint32_t)m_sortedVerticesByMaterial[0].size() - 2);
-    m_sortedIndicesByMaterial[lightMaterialID].push_back((uint32_t)m_sortedVerticesByMaterial[0].size() - 1);
-    */
-
     PlaceModelToCenter();
 
     // Engine setup
@@ -138,10 +119,10 @@ public:
     if (GetKey(tDX::S).bHeld) { MoveCamera({ 0, 0, coeficient }); }
     if (GetKey(tDX::Z).bHeld) { MoveModel({ 0, coeficient, 0 }); }
     if (GetKey(tDX::C).bHeld) { MoveModel({ 0, -coeficient, 0 }); }
-    if (GetKey(tDX::E).bHeld) { RotateModel({ 0, coeficient, 0 }); }
-    if (GetKey(tDX::Q).bHeld) { RotateModel({ 0, -coeficient, 0 }); }
-    if (GetKey(tDX::R).bHeld) { RotateModel({ coeficient, 0, 0 }); }
-    if (GetKey(tDX::F).bHeld) { RotateModel({ -coeficient, 0, 0 }); }
+    if (GetKey(tDX::E).bHeld) { RotateModel({ 0, coeficient * 8, 0 }); }
+    if (GetKey(tDX::Q).bHeld) { RotateModel({ 0, -coeficient * 8, 0 }); }
+    if (GetKey(tDX::R).bHeld) { RotateModel({ coeficient * 8, 0, 0 }); }
+    if (GetKey(tDX::F).bHeld) { RotateModel({ -coeficient * 8, 0, 0 }); }
     if (GetKey(tDX::NP6).bHeld) { MoveLight({ coeficient, 0, 0 }); }
     if (GetKey(tDX::NP4).bHeld) { MoveLight({ -coeficient, 0, 0 }); }
     if (GetKey(tDX::NP5).bHeld) { MoveLight({ 0, -coeficient, 0 }); }
@@ -178,16 +159,13 @@ public:
     // Set pipeline
     m_pipeline->SetRSDescriptor(m_screenWidth, m_screenHeight, Pipeline::Culling::CW);
     m_pipeline->SetOMBuffers(m_depthBuffer, (byte4*)m_renderTarget->GetData(), m_screenWidth, m_screenHeight);
-    m_pipeline->SetVSBuffers(m_mvpMatrix, m_viewMatrix, m_modelMatrix);
+    m_pipeline->SetVSBuffers(m_mvpMatrix, m_modelMatrix, m_viewMatrix, m_projectionMatrix);
 
     ClearDepthBuffer();
 
-    //uint8_t materialsNum = m_drawLight ? (uint8_t)m_loader->LoadedMaterials.size() : (uint8_t)m_loader->LoadedMaterials.size() - 1;
-    uint8_t materialsNum = m_modelScene->mNumMaterials;
-
     MaterialReflectance reflectance = {};
 
-    for (size_t materialID = 0; materialID < materialsNum; materialID++)
+    for (size_t materialID = 0; materialID < m_modelScene->mNumMaterials; materialID++)
     {
       m_pipeline->SetIAInput(m_sortedVerticesByMaterial[materialID], m_sortedIndicesByMaterial[materialID]);
 
@@ -201,28 +179,12 @@ public:
       if (mtl->Get(AI_MATKEY_COLOR_SPECULAR, color) == AI_SUCCESS)
         reflectance.Ks = { color.r, color.g, color.b };
 
-      /*
-      if (materialID == materialsNum) // TODO: Light
-      {
-        m_pipeline->SetVSBuffers(m_mvpLightMatrix, m_viewMatrix, m_modelMatrix);
-
-        m_materialTextures.Ka_map = nullptr;
-        m_materialTextures.Kd_map = nullptr;
-        m_materialTextures.Ks_map = nullptr;
-        m_materialTextures.Bump_map = nullptr;
-        m_materialTextures.texturesHeight = 0;
-        m_materialTextures.texturesWidth = 0;
-      }
-      else
-      */
-      {
-        m_materialTextures.Ka_map = (byte4*)m_PSTexturesSprites[materialID][MapType::Ka_map].GetData();
-        m_materialTextures.Kd_map = (byte4*)m_PSTexturesSprites[materialID][MapType::Kd_map].GetData();
-        m_materialTextures.Ks_map = (byte4*)m_PSTexturesSprites[materialID][MapType::Ks_map].GetData();
-        m_materialTextures.Bump_map = (byte4*)m_PSTexturesSprites[materialID][MapType::Bump_map].GetData();
-        m_materialTextures.texturesHeight = m_PSTexturesSprites[materialID][MapType::Kd_map].height;
-        m_materialTextures.texturesWidth = m_PSTexturesSprites[materialID][MapType::Kd_map].width;
-      }
+      m_materialTextures.Ka_map = (byte4*)m_PSTexturesSprites[materialID][MapType::Ka_map].GetData();
+      m_materialTextures.Kd_map = (byte4*)m_PSTexturesSprites[materialID][MapType::Kd_map].GetData();
+      m_materialTextures.Ks_map = (byte4*)m_PSTexturesSprites[materialID][MapType::Ks_map].GetData();
+      m_materialTextures.Bump_map = (byte4*)m_PSTexturesSprites[materialID][MapType::Bump_map].GetData();
+      m_materialTextures.texturesHeight = m_PSTexturesSprites[materialID][MapType::Kd_map].height;
+      m_materialTextures.texturesWidth = m_PSTexturesSprites[materialID][MapType::Kd_map].width;
 
       m_pipeline->SetPSBuffers(
         reflectance,
@@ -237,8 +199,8 @@ public:
 
   void PlaceModelToCenter()
   {
-    float3 maxCoords = { numeric_limits<float>::min(), numeric_limits<float>::min(), numeric_limits<float>::min() };
-    float3 minCoords = { numeric_limits<float>::max(), numeric_limits<float>::max(), numeric_limits<float>::max() };
+    float3 maxCoords = { -numeric_limits<float>::max(), -numeric_limits<float>::max(), -numeric_limits<float>::max() };
+    float3 minCoords = {  numeric_limits<float>::max(),  numeric_limits<float>::max(),  numeric_limits<float>::max() };
 
     for (size_t meshID = 0; meshID < m_modelScene->mNumMeshes; meshID++)
     {
@@ -324,18 +286,18 @@ public:
     const float fovY = 45.0f;
     const float n = 0.1f;
     const float f = 10000.0f;
-    const float tan_fovY = tan(toRad(fovY / 2.0f));
+    const float yScale = 1.0f / tan(toRad(fovY / 2.0f));
+    const float xScale = yScale / m_aspectRatio;
 
     m_projectionMatrix =
     { {
-      {{ 1.0f / (m_aspectRatio * tan_fovY), 0              , 0                 , 0                    }},
-      {{ 0                                , 1.0f / tan_fovY, 0                 , 0                    }},
-      {{ 0                                , 0              , -(f + n) / (f - n), -(2 * f*n) / (f - n) }},
-      {{ 0                                , 0              , -1                , 0                    }}
+      {{ xScale, 0     , 0          , 0               }},
+      {{ 0     , yScale, 0          , 0               }},
+      {{ 0     , 0     , f / (n - f), n * f / (n - f) }},
+      {{ 0     , 0     , -1         , 0               }}
     } };
 
     m_mvpMatrix = m_projectionMatrix * m_viewMatrix * m_modelMatrix;
-    m_mvpLightMatrix = m_projectionMatrix * m_viewMatrix * m_modelLightMatrix;
   }
 
   void ClearDepthBuffer()
@@ -371,7 +333,6 @@ private:
 
   // Light
   float3 m_lightTranslation = { 0, 0, 0 };
-  float4x4 m_mvpLightMatrix;
 
   // Look at
   float3 m_eye = { 0, 0, 0 };
@@ -384,6 +345,7 @@ private:
   std::vector<std::vector<uint32_t>> m_sortedIndicesByMaterial;
 
   float* m_depthBuffer;
+
   float m_aspectRatio;
 
   uint16_t m_screenWidth;

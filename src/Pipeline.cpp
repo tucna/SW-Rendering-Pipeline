@@ -56,6 +56,7 @@ Pipeline::VSOutput Pipeline::VertexShader(const Vertex& vertex)
 float4 Pipeline::PixelShader(VSOutput& psinput)
 {
   //return float4(1,0,0,1);
+  //return float4(psinput.uv.x, psinput.uv.y, 0,1);
   //return float4(normalize(psinput.normal) * 0.5f + 0.5f,1.0f);
 
   const float3 lightAmbient  = { 0.2f, 0.2f, 0.2f };
@@ -77,7 +78,7 @@ float4 Pipeline::PixelShader(VSOutput& psinput)
 
   float3 ambient = m_reflectance.Ka * lightAmbient * objectAmbient;
 
-  float3 normal = normalize(psinput.normal);
+  float3 normal = psinput.normal;
 
   if (m_textures->Bump_map)
   {
@@ -85,7 +86,7 @@ float4 Pipeline::PixelShader(VSOutput& psinput)
     float3 B = normalize(psinput.bitangent);
     float3 T = normalize(psinput.tangent);
 
-    float4x4 TBN =
+    const float4x4 TBN =
     { {
       {{ T.x, B.x, N.x, 0 }},
       {{ T.y, B.y, N.y, 0 }},
@@ -95,8 +96,10 @@ float4 Pipeline::PixelShader(VSOutput& psinput)
 
     normal = sample(m_textures->Bump_map, { m_textures->texturesWidth, m_textures->texturesHeight }, psinput.uv);
     normal = normalize(normal * 2.0f - 1.0f);
-    normal = normalize(float4(TBN * float4(normal, 0.0f)).xyz());
+    normal = float4(TBN * float4(normal, 0.0f)).xyz();
   }
+
+  normal = normalize(normal);
 
   float3 lightDir = normalize(m_lightPosition - psinput.worldPosition);
 
@@ -139,6 +142,11 @@ void Pipeline::PrimitiveAssembly()
     FillUpData(triangle.v2, index + 1);
     FillUpData(triangle.v3, index + 2);
 
+    float3 faceNormal = cross(triangle.v2.position.xyz() - triangle.v1.position.xyz(), triangle.v3.position.xyz() - triangle.v1.position.xyz());
+
+    if (faceNormal.z < 0)
+      continue;
+
     // Cull
     if (triangle.v1.position.x > triangle.v1.position.w &&
         triangle.v2.position.x > triangle.v2.position.w &&
@@ -170,13 +178,11 @@ void Pipeline::PrimitiveAssembly()
         triangle.v3.position.z < 0.0f)
       continue;
 
-    // clipping routines
+    // Clipping routines
     const auto Clip1 = [&](VSOutput& v1, VSOutput& v2, VSOutput& v3)
     {
-      // calculate alpha values for getting adjusted vertices
       const float alphaA = (-v1.position.z) / (v2.position.z - v1.position.z);
       const float alphaB = (-v1.position.z) / (v3.position.z - v1.position.z);
-      // interpolate to get v0a and v0b
       const auto v0a = interpolate(v1, v2, alphaA);
       const auto v0b = interpolate(v1, v3, alphaB);
 
@@ -186,17 +192,16 @@ void Pipeline::PrimitiveAssembly()
 
     const auto Clip2 = [&](VSOutput& v1, VSOutput& v2, VSOutput& v3)
     {
-      // calculate alpha values for getting adjusted vertices
       const float alpha0 = (-v1.position.z) / (v3.position.z - v1.position.z);
       const float alpha1 = (-v2.position.z) / (v3.position.z - v2.position.z);
-      // interpolate to get v0a and v0b
+
       v1 = interpolate(v1, v3, alpha0);
       v2 = interpolate(v2, v3, alpha1);
 
       m_VSOutputTriangles.push_back({ v1, v2, v3 });
     };
 
-    // near clipping tests
+    // Near clipping tests
     if (triangle.v1.position.z < 0.0f)
     {
       if (triangle.v2.position.z < 0.0f)
@@ -217,8 +222,6 @@ void Pipeline::PrimitiveAssembly()
       Clip1(triangle.v3, triangle.v1, triangle.v2);
     else // no near clipping necessary
       m_VSOutputTriangles.push_back(triangle);
-
-    //m_VSOutputTriangles.push_back(triangle);
   }
 
 }
@@ -242,14 +245,13 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
 
   auto ToScreenSpace = [&](float4& position)
   {
-    position.x = (position.x + 1.0f) * m_viewportWidth * 0.5f;
-    position.y = (1.0f - position.y) * m_viewportHeight * 0.5f;
+    position.x = ( position.x + 1.0f) * m_viewportWidth * 0.5f;
+    position.y = (-position.y + 1.0f) * m_viewportHeight * 0.5f;
   };
 
   auto EdgeFunction = [](const float3& v1, const float3& v2, const float3& v3) -> float
   {
-    return (v3.x - v1.x) * (v2.y - v1.y) - (v3.y - v1.y) * (v2.x - v1.x);
-    //return (v1.x - v2.x) * (v3.y - v1.y) - (v1.y - v2.y) * (v3.x - v1.x);
+    return (v2.x - v1.x) * (v3.y - v1.y) - (v2.y - v1.y) * (v3.x - v1.x);
   };
 
   // Transform
@@ -268,9 +270,6 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
   // Culling
   float area = EdgeFunction(v1, v2, v3);
 
-  if ((m_culling == Culling::CW && area < 0.0f) || (m_culling == Culling::CCW && area > 0.0f))
-    return;
-
   // Get the bounding box of the triangle
   int maxX = lround(std::max(v1.x, std::max(v2.x, v3.x)));
   int minX = lround(std::min(v1.x, std::min(v2.x, v3.x)));
@@ -288,16 +287,12 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
     {
       // Barycentric interpolation
       float3 p = {x + 0.5f, y + 0.5f, 0.0f};
-      float w1 = EdgeFunction(v2, v3, p);
-      float w2 = EdgeFunction(v3, v1, p);
-      float w3 = EdgeFunction(v1, v2, p);
+      float w1 = EdgeFunction(v2, v3, p) / area;
+      float w2 = EdgeFunction(v3, v1, p) / area;
+      float w3 = EdgeFunction(v1, v2, p) / area;
 
       if (w1 < 0 || w2 < 0 || w3 < 0)
         continue;
-
-      w1 /= area;
-      w2 /= area;
-      w3 /= area;
 
       float z = w1 * v1.z + w2 * v2.z + w3 * v3.z;
 
@@ -308,8 +303,10 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
         float w = w1 * triangle.v1.position.w + w2 * triangle.v2.position.w + w3 * triangle.v3.position.w;
         float invW = 1.0f / w;
 
+        z = z * invW;
+
         VSOutput vertex;
-        vertex.position = { (float)x, (float)y, z, w };
+        vertex.position = { (float)x, (float)y, z, invW };
 
         vertex.worldPosition = w1 * triangle.v1.worldPosition + w2 * triangle.v2.worldPosition + w3 * triangle.v3.worldPosition;
         vertex.normal = w1 * triangle.v1.normal + w2 * triangle.v2.normal + w3 * triangle.v3.normal;
