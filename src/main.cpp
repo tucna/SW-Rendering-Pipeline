@@ -38,7 +38,7 @@ public:
 
     m_pipeline = make_unique<Pipeline>();
 
-    string directory = "backpack";
+    string directory = "wall";
     m_modelScene = m_importer.ReadFile(ReturnObjPath(directory),
       aiProcess_PreTransformVertices |
       aiProcess_CalcTangentSpace |
@@ -70,7 +70,7 @@ public:
         m_PSTexturesSprites[materialID][MapType::Bump_map].LoadFromFile("res/" + directory + "/" + texPath.C_Str());
     };
 
-    size_t materialsNum = m_modelScene->mNumMaterials; // TODO One more for light
+    size_t materialsNum = m_modelScene->mNumMaterials;
 
     m_sortedVerticesByMaterial.resize(materialsNum);
     m_sortedIndicesByMaterial.resize(materialsNum);
@@ -268,11 +268,9 @@ public:
     } };
 
     // View matrix
-    float3 zaxis = normalize(m_target - m_eye);
-    float3 xaxis = normalize(cross(zaxis, m_up));
-    float3 yaxis = cross(xaxis, zaxis);
-
-    zaxis = -zaxis;
+    float3 zaxis = normalize(m_eye - m_target);
+    float3 xaxis = normalize(cross(m_up, zaxis));
+    float3 yaxis = cross(zaxis, xaxis);
 
     m_viewMatrix =
     { {

@@ -142,9 +142,11 @@ void Pipeline::PrimitiveAssembly()
     FillUpData(triangle.v2, index + 1);
     FillUpData(triangle.v3, index + 2);
 
-    float3 faceNormal = cross(triangle.v2.position.xyz() - triangle.v1.position.xyz(), triangle.v3.position.xyz() - triangle.v1.position.xyz());
+    float3 faceNormalClip = normalize(cross(triangle.v3.position.xyz() - triangle.v1.position.xyz(), triangle.v2.position.xyz() - triangle.v1.position.xyz()));
+    float3 eyeClip = float4(m_projectionMatrix * float4(0, 0, 0, 1)).xyz();
+    float3 eyeVec = normalize(triangle.v1.position.xyz() - eyeClip);
 
-    if (faceNormal.z < 0)
+    if (dot(faceNormalClip, eyeVec) > 0)
       continue;
 
     // Cull
