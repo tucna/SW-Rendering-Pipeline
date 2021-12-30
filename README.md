@@ -15,7 +15,7 @@ Graphics rendering pipeline without any external graphical dependencies running 
 
 # Screenshots
 <p align="center">  
-  <img src="doc/1.jpg" width=300px> <img src="doc/2.jpg" width=300px> <img src="doc/3.jpg" width=300px> <img src="doc/4.jpg" width=300px> <img src="doc/5.jpg" width=300px> <img src="doc/6.jpg" width=300px>
+  <img src="doc/1.jpg" width=250px> <img src="doc/2.jpg" width=250px> <img src="doc/3.jpg" width=250px> <img src="doc/4.jpg" width=250px> <img src="doc/5.jpg" width=250px> <img src="doc/6.jpg" width=250px>
 </p>
 
 # Features
