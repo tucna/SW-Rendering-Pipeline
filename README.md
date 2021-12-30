@@ -37,10 +37,10 @@ There are several stages mimicking standard pipeline.
 The stage itself does nothing (yet) but it lets you to specify vertex and index buffers.
 
 ## Vertex shader
-Vertex shader move vertices from _model space_ to _clip (projection) space_. My renderer is *right handed* in _model space_, _world space_ and _view space_ and *left handed* in _clip space_.
+Vertex shader move vertices from _model space_ to _clip (projection) space_. My renderer is **right handed** in _model space_, _world space_ and _view space_ and **left handed** in _clip space_.
 
 ## Primitive assembly
-From the vertices, the triangles are built in here. It is important for input `obj` mesh to be in *CCW* orientation. Culling and clipping happens here too. In classical pipeline, the culling is more like preliminary using flags, but in mine the triangle is not even considered if it fails `normal` test.
+From the vertices, the triangles are built in here. It is important for input `obj` mesh to be in **CCW** orientation. Culling and clipping happens here too. In classical pipeline, the culling is more like preliminary using flags, but in mine the triangle is not even considered if it fails `normal` test.
 
 ## Rasterizer
 Transformation to _NDC_ and _screen space_, barycentric interpolation, depth test and pixel shader invocation for all related fragments. In classical pipeline, the depth test in rasterizer is in a form of early depth test, which can be disabled based on following pixel shader procesing or via configuration. In my pipeline, the depth test here is final without any more checks later.
@@ -48,7 +48,7 @@ Transformation to _NDC_ and _screen space_, barycentric interpolation, depth tes
 This part is parallelized via `std::for_each` with `std::execution::par_unseq`.
 
 ## Pixel shader
-Every pixel is processed here. Textures are applied including normal maps and everything is lit according to *Phong model*. The material information can be supplemented via `mlt` file.
+Every pixel is processed here. Texture is applied including normal map and lit according to **Phong model**. The material information can be supplemented via `mlt` file.
 
 ## Output merger
 Final stage where pixel is written to an output buffer.
