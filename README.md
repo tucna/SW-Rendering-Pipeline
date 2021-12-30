@@ -34,7 +34,7 @@ Graphics rendering pipeline without any external graphical dependencies running 
 There are several stages mimicking standard pipeline.
 
 ## Input assembler
-The stage itself does nothing (yet) but let you to specify the vertex and index buffers.
+The stage itself does nothing (yet) but let you set up the vertex and index buffers.
 
 ## Vertex shader
 Vertex shader move vertices from _model space_ to _clip (projection) space_. My renderer is **right handed** in _model space_, _world space_ and _view space_ and **left handed** in _clip space_.
