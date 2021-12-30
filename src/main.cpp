@@ -38,7 +38,7 @@ public:
 
     m_pipeline = make_unique<Pipeline>();
 
-    string directory = "wall";
+    string directory = "dice";
     m_modelScene = m_importer.ReadFile(ReturnObjPath(directory),
       aiProcess_PreTransformVertices |
       aiProcess_CalcTangentSpace |

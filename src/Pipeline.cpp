@@ -269,7 +269,6 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
   float3 v2 = { triangle.v2.position.x, triangle.v2.position.y, triangle.v2.position.z };
   float3 v3 = { triangle.v3.position.x, triangle.v3.position.y, triangle.v3.position.z };
 
-  // Culling
   float area = EdgeFunction(v1, v2, v3);
 
   // Get the bounding box of the triangle
