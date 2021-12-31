@@ -282,8 +282,8 @@ public:
 
     // Projection
     const float fovY = 45.0f;
-    const float n = 0.1f;
-    const float f = 10000.0f;
+    const float n = 1.0;
+    const float f = 1000.0f;
     const float yScale = 1.0f / tan(toRad(fovY / 2.0f));
     const float xScale = yScale / m_aspectRatio;
 
@@ -295,6 +295,21 @@ public:
       {{ 0     , 0     , -1         , 0               }}
     } };
 
+    /*
+    const float fovY = 45;
+    const float n = 0.1f;
+
+    float yScale = 1.0f / tan(toRad(fovY / 2.0f));
+    float xScale = yScale / m_aspectRatio;
+
+    m_projectionMatrix =
+    { {
+      {{ xScale, 0     ,  0, 0 }},
+      {{ 0     , yScale,  0, 0 }},
+      {{ 0     , 0     ,  0, n }},
+      {{ 0     , 0     , -1, 0 }}
+    } };
+    */
     m_mvpMatrix = m_projectionMatrix * m_viewMatrix * m_modelMatrix;
   }
 
