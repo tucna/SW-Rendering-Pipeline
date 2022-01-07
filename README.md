@@ -34,16 +34,16 @@ Graphics rendering pipeline without any external graphical dependencies running 
 There are several stages mimicking standard pipeline.
 
 ## Input assembler
-The stage itself does nothing (yet) but it lets you to specify vertex and index buffers.
+The stage itself does nothing (yet) but let you set up the vertex and index buffers.
 
 ## Vertex shader
 Vertex shader move vertices from _model space_ to _clip (projection) space_. My renderer is **right handed** in _model space_, _world space_ and _view space_ and **left handed** in _clip space_.
 
 ## Primitive assembly
-From the vertices, the triangles are built in here. It is important for input `obj` mesh to be in **CCW** orientation. Culling and clipping happens here too. In classical pipeline, the culling is more like preliminary using flags, but in mine the triangle is not even considered if it fails `normal` test.
+From the vertices, the triangles are built in here. It is important for input `obj` mesh to be in **CCW** orientation. Culling and clipping happens here too. In a classical pipeline, the culling is more like preliminary using flags but in mine the triangle is removed if it fails `normal` test.
 
 ## Rasterizer
-Transformation to _NDC_ and _screen space_, barycentric interpolation, depth test and pixel shader invocation for all related fragments. In classical pipeline, the depth test in rasterizer is in a form of early depth test, which can be disabled based on following pixel shader procesing or via configuration. In my pipeline, the depth test here is final without any more checks later.
+Transformation to _NDC_ and _screen space_, barycentric interpolation, depth test and pixel shader invocation for all related fragments. In classical pipeline, the depth test in rasterizer is in a form of early one which can be disabled based on following pixel shader procesing or via configuration. In my pipeline, the depth test here is final without any more checks later.
 
 This part is parallelized via `std::for_each` with `std::execution::par_unseq`.
 
