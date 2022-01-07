@@ -6,6 +6,20 @@
 using namespace std;
 using namespace math;
 
+bool atomicLessAndExchange(std::atomic<float>& original, float targetValue)
+{
+  float oldValue = original.load();
+
+  do
+  {
+    if (targetValue >= oldValue)
+      return false;
+  }
+  while (!original.compare_exchange_weak(oldValue, targetValue));
+
+  return true;
+}
+
 void Pipeline::Draw()
 {
   // Clean all internal structures
@@ -22,6 +36,8 @@ void Pipeline::Draw()
   PrimitiveAssembly();
 
   // RS, PS, OM
+  //std::for_each(std::execution::seq, std::begin(m_VSOutputTriangles), std::end(m_VSOutputTriangles), [&](auto& triangle) { Rasterizer(triangle); });
+  //std::for_each(std::execution::par, std::begin(m_VSOutputTriangles), std::end(m_VSOutputTriangles), [&](auto& triangle) { Rasterizer(triangle); });
   std::for_each(std::execution::par_unseq, std::begin(m_VSOutputTriangles), std::end(m_VSOutputTriangles), [&](auto& triangle) { Rasterizer(triangle); });
 }
 
@@ -55,10 +71,34 @@ Pipeline::VSOutput Pipeline::VertexShader(const Vertex& vertex)
 
 float4 Pipeline::PixelShader(VSOutput& psinput)
 {
+  /*
+  int M = 10;
+  float p = (fmod(psinput.uv.x * M, 1.0f)>0.5f) ^ (fmod(psinput.uv.y * M, 1.0f) < 0.5f);
+  return float4(p,p,p,1);
+  */
+
+  /*
+  if (psinput.position.z < 0.3f)
+    return float4(1, 0, 0, 1);
+  else
+    return float4(0, 1, 0, 1);
+    */
   //return float4(1,0,0,1);
-  //return float4(psinput.uv.x, psinput.uv.y, 0,1);
+ // return float4(psinput.uv.x, psinput.uv.y, 0,1);
   //return float4(normalize(psinput.normal) * 0.5f + 0.5f,1.0f);
 
+  //return float4(psinput.position.z, psinput.position.z, psinput.position.z, 1.0f);
+  /*
+  float ndc = psinput.position.z;
+
+  const float n = 10.0f;
+  const float f = 3000.0f;
+
+  float linearDepth = (2.0f * n * f) / (f + n - ndc * (f - n));
+  linearDepth /= f;
+
+  return float4(linearDepth, linearDepth, linearDepth, 1.0f);
+  */
   const float3 lightAmbient  = { 0.2f, 0.2f, 0.2f };
   const float3 lightDiffuse  = { 0.8f, 0.8f, 0.8f };
   const float3 lightSpecular = { 1.0f, 1.0f, 1.0f };
@@ -126,12 +166,12 @@ void Pipeline::PrimitiveAssembly()
 {
   auto FillUpData = [&](VSOutput& vertex, size_t index)
   {
-    vertex.position = m_VSOutputs[index].position;
-    vertex.worldPosition = m_VSOutputs[index].worldPosition;
-    vertex.normal   = m_VSOutputs[index].normal;
-    vertex.tangent = m_VSOutputs[index].tangent;
-    vertex.bitangent = m_VSOutputs[index].bitangent;
-    vertex.uv = m_VSOutputs[index].uv;
+    vertex.position       = m_VSOutputs[index].position;
+    vertex.worldPosition  = m_VSOutputs[index].worldPosition;
+    vertex.normal         = m_VSOutputs[index].normal;
+    vertex.tangent        = m_VSOutputs[index].tangent;
+    vertex.bitangent      = m_VSOutputs[index].bitangent;
+    vertex.uv             = m_VSOutputs[index].uv;
   };
 
   for (size_t index = 0; index < m_VSOutputs.size(); index += 3)
@@ -145,9 +185,10 @@ void Pipeline::PrimitiveAssembly()
     float3 faceNormalClip = normalize(cross(triangle.v3.position.xyz() - triangle.v1.position.xyz(), triangle.v2.position.xyz() - triangle.v1.position.xyz()));
     float3 eyeClip = float4(m_projectionMatrix * float4(0, 0, 0, 1)).xyz();
     float3 eyeVec = normalize(triangle.v1.position.xyz() - eyeClip);
+    //float3 eyeVec = normalize(eyeClip - triangle.v1.position.xyz());
 
     if (dot(faceNormalClip, eyeVec) > 0)
-      continue;
+     continue;
 
     // Cull
     if (triangle.v1.position.x > triangle.v1.position.w &&
@@ -183,10 +224,13 @@ void Pipeline::PrimitiveAssembly()
     // Clipping routines
     const auto Clip1 = [&](VSOutput& v1, VSOutput& v2, VSOutput& v3)
     {
-      const float alphaA = (-v1.position.z) / (v2.position.z - v1.position.z);
-      const float alphaB = (-v1.position.z) / (v3.position.z - v1.position.z);
-      const auto v0a = interpolate(v1, v2, alphaA);
-      const auto v0b = interpolate(v1, v3, alphaB);
+      const float alphaA = (-v1.position.z) / (v2.position.z - v1.position.z);// + 0.1f;
+      const float alphaB = (-v1.position.z) / (v3.position.z - v1.position.z);// + 0.1f;
+      auto v0a = interpolate(v1, v2, alphaA);
+      auto v0b = interpolate(v1, v3, alphaB);
+
+      //v0a.position.z = 0.0f;
+      //v0b.position.z = 0.0f;
 
       m_VSOutputTriangles.push_back({ v0a, v2, v3 });
       m_VSOutputTriangles.push_back({ v0b, v0a, v3 });
@@ -194,11 +238,14 @@ void Pipeline::PrimitiveAssembly()
 
     const auto Clip2 = [&](VSOutput& v1, VSOutput& v2, VSOutput& v3)
     {
-      const float alpha0 = (-v1.position.z) / (v3.position.z - v1.position.z);
-      const float alpha1 = (-v2.position.z) / (v3.position.z - v2.position.z);
+      const float alpha0 = (-v1.position.z) / (v3.position.z - v1.position.z);// + 0.1f;
+      const float alpha1 = (-v2.position.z) / (v3.position.z - v2.position.z);// + 0.1f;
 
       v1 = interpolate(v1, v3, alpha0);
       v2 = interpolate(v2, v3, alpha1);
+
+      //v1.position.z = 0.0f;
+      //v2.position.z = 0.0f;
 
       m_VSOutputTriangles.push_back({ v1, v2, v3 });
     };
@@ -226,6 +273,14 @@ void Pipeline::PrimitiveAssembly()
       m_VSOutputTriangles.push_back(triangle);
   }
 
+  // TUCNA
+  std::sort(m_VSOutputTriangles.begin(), m_VSOutputTriangles.end(),[](const VSOutputTriangle& t1, const VSOutputTriangle& t2)
+  {
+    float z1 = (t1.v1.position.z + t1.v2.position.z + t1.v3.position.z) / 3.0f;
+    float z2 = (t2.v1.position.z + t2.v2.position.z + t2.v3.position.z) / 3.0f;
+
+    return z2 > z1;
+  });
 }
 
 void Pipeline::Rasterizer(VSOutputTriangle& triangle)
@@ -235,20 +290,24 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
     float invW = 1.0f / vertex.position.w;
 
     // Everything from vsoutput must be processed TODO: template?
-    vertex.position *= invW;
+    vertex.position.w = invW;
+    vertex.position.x *= invW;
+    vertex.position.y *= invW;
+    vertex.position.z *= invW;
+
+    // Move?
     vertex.normal *= invW;
     vertex.tangent *= invW;
     vertex.bitangent *= invW;
     vertex.uv *= invW;
     vertex.worldPosition *= invW;
-
-    vertex.position.w = invW;
   };
 
   auto ToScreenSpace = [&](float4& position)
   {
     position.x = ( position.x + 1.0f) * m_viewportWidth * 0.5f;
     position.y = (-position.y + 1.0f) * m_viewportHeight * 0.5f;
+    position.z = position.z;
   };
 
   auto EdgeFunction = [](const float3& v1, const float3& v2, const float3& v3) -> float
@@ -288,6 +347,7 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
     {
       // Barycentric interpolation
       float3 p = {x + 0.5f, y + 0.5f, 0.0f};
+
       float w1 = EdgeFunction(v2, v3, p) / area;
       float w2 = EdgeFunction(v3, v1, p) / area;
       float w3 = EdgeFunction(v1, v2, p) / area;
@@ -295,35 +355,34 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
       if (w1 < 0 || w2 < 0 || w3 < 0)
         continue;
 
-      float z = w1 * v1.z + w2 * v2.z + w3 * v3.z;
+      float z = w1 * triangle.v1.position.z + w2 * triangle.v2.position.z + w3 * triangle.v3.position.z;
 
       if (z < m_depthBuffer[y * m_buffersWidth + x])
+      //if (atomicLessAndExchange(m_depthBuffer->at(y * m_buffersWidth + x), z))
       {
         m_depthBuffer[y * m_buffersWidth + x] = z;
 
-        float w = w1 * triangle.v1.position.w + w2 * triangle.v2.position.w + w3 * triangle.v3.position.w;
-        float invW = 1.0f / w;
-
-        z = z * invW;
+        float w = 1.0f / (w1 * triangle.v1.position.w + w2 * triangle.v2.position.w + w3 * triangle.v3.position.w);
 
         VSOutput vertex;
-        vertex.position = { (float)x, (float)y, z, invW };
+        vertex.position = { (float)x, (float)y, z, w };
 
-        vertex.worldPosition = w1 * triangle.v1.worldPosition + w2 * triangle.v2.worldPosition + w3 * triangle.v3.worldPosition;
-        vertex.normal = w1 * triangle.v1.normal + w2 * triangle.v2.normal + w3 * triangle.v3.normal;
+        vertex.normal = w1 * triangle.v1.normal + w2 * (triangle.v2.normal) + w3 * (triangle.v3.normal);
         vertex.tangent = w1 * triangle.v1.tangent + w2 * triangle.v2.tangent + w3 * triangle.v3.tangent;
         vertex.bitangent = w1 * triangle.v1.bitangent + w2 * triangle.v2.bitangent + w3 * triangle.v3.bitangent;
         vertex.uv = w1 * triangle.v1.uv + w2 * triangle.v2.uv + w3 * triangle.v3.uv;
+        vertex.worldPosition = w1 * triangle.v1.worldPosition + w2 * triangle.v2.worldPosition + w3 * triangle.v3.worldPosition;
 
-        vertex.worldPosition *= invW;
-        vertex.normal *= invW;
-        vertex.tangent *= invW;
-        vertex.bitangent *= invW;
-        vertex.uv *= invW;
+        vertex.normal *= w;
+        vertex.tangent *= w;
+        vertex.bitangent *= w;
+        vertex.uv *= w;
+        vertex.worldPosition *= w;
 
         float4 color = PixelShader(vertex);
         OutputMerger(x, y, color);
       }
+
     }
   }
 }

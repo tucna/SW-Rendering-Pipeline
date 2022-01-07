@@ -2,6 +2,9 @@
 
 #include "Math.h"
 
+#include <array>
+#include <atomic>
+#include <mutex>
 #include <vector>
 
 namespace tDX
@@ -38,6 +41,7 @@ public:
   void SetVSBuffers(math::float4x4& mvpMatrix, math::float4x4& modelMatrix, math::float4x4& viewMatrix, math::float4x4& projectionMatrix) { m_mvpMatrix = mvpMatrix; m_viewMatrix = viewMatrix; m_modelMatrix = modelMatrix; m_projectionMatrix = projectionMatrix; }
   void SetRSDescriptor(uint16_t viewportWidth, uint16_t viewportHeight, Culling culling) { m_viewportWidth = viewportWidth; m_viewportHeight = viewportHeight; m_culling = culling; } // culling currently cannot be changed
   void SetPSBuffers(const math::MaterialReflectance& reflectance, math::MaterialTextures* textures, math::float3 lightPosition, math::float3 cameraPosition) { m_reflectance = reflectance; m_textures = textures; m_lightPosition = lightPosition; m_cameraPosition = cameraPosition; }
+  //void SetOMBuffers(std::vector<std::atomic<float>>* depthBuffer, math::byte4* renderTarget, uint16_t buffersWidth, uint16_t buffersHeight) { m_depthBuffer = depthBuffer; m_renderTarget = renderTarget; m_buffersWidth = buffersWidth; m_buffersHeight = buffersHeight; }
   void SetOMBuffers(float* depthBuffer, math::byte4* renderTarget, uint16_t buffersWidth, uint16_t buffersHeight) { m_depthBuffer = depthBuffer; m_renderTarget = renderTarget; m_buffersWidth = buffersWidth; m_buffersHeight = buffersHeight; }
 
   void Draw();
@@ -79,9 +83,14 @@ private:
 
   // OM
   float* m_depthBuffer = nullptr;
+  //std::vector<std::atomic<float>>* m_depthBuffer;
+
   math::byte4* m_renderTarget = nullptr;
   uint16_t m_buffersWidth;
   uint16_t m_buffersHeight;
+
+  uint16_t m_overdraw = 0;
+  std::mutex m_mtx;
 };
 
 inline Pipeline::VSOutput operator-(const Pipeline::VSOutput& v1, const Pipeline::VSOutput& v2)

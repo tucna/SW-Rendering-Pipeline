@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <cmath>
 #include <memory>
 
 // Methods are inlined because I want to include them in headers
@@ -96,6 +97,7 @@ inline float3 operator*(float s1, const float3 &v1) { return { v1.x * s1, v1.y *
 inline float3 operator-(const float3& v1, float s1) { return { v1.x - s1, v1.y - s1, v1.z - s1 }; }
 inline float3 operator*(const float3& v1, float s1) { return { v1.x * s1, v1.y * s1, v1.z * s1 }; }
 inline float3 operator*(const float3& v1, const float3 &v2) { return { v1.x * v2.x, v1.y * v2.y, v1.z * v2.z }; }
+inline float3 operator/(const float3& v1, float s1) { return { v1.x / s1, v1.y / s1, v1.z / s1 }; }
 
 inline float4 operator-(const float4& v1, const float4& v2) { return { v1.x - v2.x, v1.y - v2.y, v1.z - v2.z, v1.w - v2.w }; }
 inline float4 operator*(const float4& v1, const float4& v2) { return { v1.x * v2.x, v1.y * v2.y, v1.z * v2.z, v1.w * v2.w }; }
@@ -178,8 +180,17 @@ inline float3 sample(byte4* texture, uint2 size, float2 uv)
 {
   float3 color;
 
-  uint16_t texX = (uint16_t)floor(uv.x * size.x);
-  uint16_t texY = (uint16_t)floor((1.0f - uv.y) * size.y);
+  float intPart;
+
+  float uvX = uv.x > 1.0f ? modf(uv.x, &intPart) : uv.x;
+  float uvY = uv.y > 1.0f ? modf(uv.y, &intPart) : uv.y;
+
+  uvX = uv.x < 0.0f ? 1 - modf(-uv.x, &intPart) : uvX;
+  uvY = uv.y < 0.0f ? 1 - modf(-uv.y, &intPart) : uvY;
+
+
+  uint16_t texX = (uint16_t)floor(uvX * size.x);
+  uint16_t texY = (uint16_t)floor((1.0f - uvY) * size.y);
 
   byte4 texColor = texture[texY * size.x + texX];
 

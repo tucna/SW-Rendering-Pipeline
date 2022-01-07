@@ -12,6 +12,7 @@
 #include "Math.h"
 #include "Pipeline.h"
 
+#include <atomic>
 #include <filesystem>
 #include <memory>
 #include <string>
@@ -26,6 +27,7 @@ class Light : public tDX::PixelGameEngine
 {
 public:
   Light()
+    //m_depthBuffer(800*600)
   {
     sAppName = "Light";
   }
@@ -38,7 +40,7 @@ public:
 
     m_pipeline = make_unique<Pipeline>();
 
-    string directory = "dice";
+    string directory = "wall";
     m_modelScene = m_importer.ReadFile(ReturnObjPath(directory),
       aiProcess_PreTransformVertices |
       aiProcess_CalcTangentSpace |
@@ -50,6 +52,7 @@ public:
     );
 
     m_depthBuffer = new float[m_screenWidth * m_screenHeight];
+    //m_depthBuffer.resize(800 * 600);
     m_renderTarget = make_unique<tDX::Sprite>(m_screenWidth, m_screenHeight);
 
     m_PSTexturesSprites.resize(m_modelScene->mNumMaterials);
@@ -111,24 +114,26 @@ public:
     Clear(tDX::BLACK);
 
     // Keyboard control
-    float coeficient = 5.0f * fElapsedTime;
+    float coeficient = 8.0f * fElapsedTime;
 
-    if (GetKey(tDX::L).bHeld) { m_drawLight = !m_drawLight; }
+    if (GetKey(tDX::L).bHeld)     { m_drawLight = !m_drawLight; }
     if (GetKey(tDX::SHIFT).bHeld) { coeficient *= 8; }
-    if (GetKey(tDX::W).bHeld) { MoveCamera({ 0, 0, -coeficient}); }
-    if (GetKey(tDX::S).bHeld) { MoveCamera({ 0, 0, coeficient }); }
-    if (GetKey(tDX::Z).bHeld) { MoveModel({ 0, coeficient, 0 }); }
-    if (GetKey(tDX::C).bHeld) { MoveModel({ 0, -coeficient, 0 }); }
-    if (GetKey(tDX::E).bHeld) { RotateModel({ 0, coeficient * 8, 0 }); }
-    if (GetKey(tDX::Q).bHeld) { RotateModel({ 0, -coeficient * 8, 0 }); }
-    if (GetKey(tDX::R).bHeld) { RotateModel({ coeficient * 8, 0, 0 }); }
-    if (GetKey(tDX::F).bHeld) { RotateModel({ -coeficient * 8, 0, 0 }); }
-    if (GetKey(tDX::NP6).bHeld) { MoveLight({ coeficient, 0, 0 }); }
-    if (GetKey(tDX::NP4).bHeld) { MoveLight({ -coeficient, 0, 0 }); }
-    if (GetKey(tDX::NP5).bHeld) { MoveLight({ 0, -coeficient, 0 }); }
-    if (GetKey(tDX::NP8).bHeld) { MoveLight({ 0, coeficient, 0 }); }
-    if (GetKey(tDX::NP7).bHeld) { MoveLight({ 0, 0, -coeficient }); }
-    if (GetKey(tDX::NP9).bHeld) { MoveLight({ 0, 0, coeficient }); }
+    if (GetKey(tDX::W).bHeld)     { MoveCamera({ 0, 0, -coeficient}); }
+    if (GetKey(tDX::S).bHeld)     { MoveCamera({ 0, 0, coeficient }); }
+    if (GetKey(tDX::Z).bHeld)     { MoveModel({ 0, coeficient, 0 }); }
+    if (GetKey(tDX::C).bHeld)     { MoveModel({ 0, -coeficient, 0 }); }
+    if (GetKey(tDX::T).bHeld)     { MoveModel({ 0,0,-coeficient }); }
+    if (GetKey(tDX::Y).bHeld)     { MoveModel({ 0,0,coeficient }); }
+    if (GetKey(tDX::E).bHeld)     { RotateModel({ 0, coeficient * 8, 0 }); }
+    if (GetKey(tDX::Q).bHeld)     { RotateModel({ 0, -coeficient * 8, 0 }); }
+    if (GetKey(tDX::R).bHeld)     { RotateModel({ coeficient * 8, 0, 0 }); }
+    if (GetKey(tDX::F).bHeld)     { RotateModel({ -coeficient * 8, 0, 0 }); }
+    if (GetKey(tDX::NP6).bHeld)   { MoveLight({ coeficient, 0, 0 }); }
+    if (GetKey(tDX::NP4).bHeld)   { MoveLight({ -coeficient, 0, 0 }); }
+    if (GetKey(tDX::NP5).bHeld)   { MoveLight({ 0, -coeficient, 0 }); }
+    if (GetKey(tDX::NP8).bHeld)   { MoveLight({ 0, coeficient, 0 }); }
+    if (GetKey(tDX::NP7).bHeld)   { MoveLight({ 0, 0, -coeficient }); }
+    if (GetKey(tDX::NP9).bHeld)   { MoveLight({ 0, 0, coeficient }); }
 
     ComposeMatrices();
     Draw();
@@ -165,7 +170,10 @@ public:
 
     MaterialReflectance reflectance = {};
 
+    auto materials = {/*1,2,3,4,5,7,8,9,10,11,12,13,14,15,16,17,18,19,*/19,20};//{5,6, 16,20};
+
     for (size_t materialID = 0; materialID < m_modelScene->mNumMaterials; materialID++)
+    //for (size_t materialID : materials)
     {
       m_pipeline->SetIAInput(m_sortedVerticesByMaterial[materialID], m_sortedIndicesByMaterial[materialID]);
 
@@ -282,34 +290,19 @@ public:
 
     // Projection
     const float fovY = 45.0f;
-    const float n = 1.0;
-    const float f = 1000.0f;
+    const float n = 0.1;
+    const float f = 5.0f;
     const float yScale = 1.0f / tan(toRad(fovY / 2.0f));
     const float xScale = yScale / m_aspectRatio;
 
     m_projectionMatrix =
     { {
-      {{ xScale, 0     , 0          , 0               }},
-      {{ 0     , yScale, 0          , 0               }},
-      {{ 0     , 0     , f / (n - f), n * f / (n - f) }},
-      {{ 0     , 0     , -1         , 0               }}
+      {{ xScale, 0     ,  0           , 0                   }},
+      {{ 0     , yScale,  0           , 0                   }},
+      {{ 0     , 0     ,  f / (n - f) , -(f * n) / (f - n) }},
+      {{ 0     , 0     , -1           , 0                   }}
     } };
 
-    /*
-    const float fovY = 45;
-    const float n = 0.1f;
-
-    float yScale = 1.0f / tan(toRad(fovY / 2.0f));
-    float xScale = yScale / m_aspectRatio;
-
-    m_projectionMatrix =
-    { {
-      {{ xScale, 0     ,  0, 0 }},
-      {{ 0     , yScale,  0, 0 }},
-      {{ 0     , 0     ,  0, n }},
-      {{ 0     , 0     , -1, 0 }}
-    } };
-    */
     m_mvpMatrix = m_projectionMatrix * m_viewMatrix * m_modelMatrix;
   }
 
@@ -358,6 +351,7 @@ private:
   std::vector<std::vector<uint32_t>> m_sortedIndicesByMaterial;
 
   float* m_depthBuffer;
+  //std::vector<std::atomic<float>> m_depthBuffer;
 
   float m_aspectRatio;
 
