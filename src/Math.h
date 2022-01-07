@@ -188,9 +188,8 @@ inline float3 sample(byte4* texture, uint2 size, float2 uv)
   uvX = uv.x < 0.0f ? 1 - modf(-uv.x, &intPart) : uvX;
   uvY = uv.y < 0.0f ? 1 - modf(-uv.y, &intPart) : uvY;
 
-
-  uint16_t texX = (uint16_t)floor(uvX * size.x);
-  uint16_t texY = (uint16_t)floor((1.0f - uvY) * size.y);
+  uint16_t texX = (uint16_t)floor(uvX * (size.x - 1.0f));
+  uint16_t texY = (uint16_t)floor((1.0f - uvY) * (size.y - 1.0f));
 
   byte4 texColor = texture[texY * size.x + texX];
 

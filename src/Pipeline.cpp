@@ -6,6 +6,7 @@
 using namespace std;
 using namespace math;
 
+// TODO: does not work
 bool atomicLessAndExchange(std::atomic<float>& original, float targetValue)
 {
   float oldValue = original.load();
@@ -38,6 +39,8 @@ void Pipeline::Draw()
   // RS, PS, OM
   //std::for_each(std::execution::seq, std::begin(m_VSOutputTriangles), std::end(m_VSOutputTriangles), [&](auto& triangle) { Rasterizer(triangle); });
   //std::for_each(std::execution::par, std::begin(m_VSOutputTriangles), std::end(m_VSOutputTriangles), [&](auto& triangle) { Rasterizer(triangle); });
+
+  // TODO: this is fast but buggy - depth buffer racing
   std::for_each(std::execution::par_unseq, std::begin(m_VSOutputTriangles), std::end(m_VSOutputTriangles), [&](auto& triangle) { Rasterizer(triangle); });
 }
 
@@ -187,7 +190,7 @@ void Pipeline::PrimitiveAssembly()
     float3 eyeVec = normalize(triangle.v1.position.xyz() - eyeClip);
     //float3 eyeVec = normalize(eyeClip - triangle.v1.position.xyz());
 
-    if (dot(faceNormalClip, eyeVec) > 0)
+    if (dot(faceNormalClip, eyeVec) < 0)
      continue;
 
     // Cull
@@ -224,13 +227,12 @@ void Pipeline::PrimitiveAssembly()
     // Clipping routines
     const auto Clip1 = [&](VSOutput& v1, VSOutput& v2, VSOutput& v3)
     {
-      const float alphaA = (-v1.position.z) / (v2.position.z - v1.position.z);// + 0.1f;
-      const float alphaB = (-v1.position.z) / (v3.position.z - v1.position.z);// + 0.1f;
-      auto v0a = interpolate(v1, v2, alphaA);
-      auto v0b = interpolate(v1, v3, alphaB);
+      // TODO: is v1.position.z - v1.position.w correct?
+      const float alphaA = (v1.position.z - v1.position.w) / (v2.position.w - v1.position.w);
+      const float alphaB = (v1.position.z - v1.position.w) / (v3.position.w - v1.position.w);
 
-      //v0a.position.z = 0.0f;
-      //v0b.position.z = 0.0f;
+      const auto v0a = interpolate(v1, v2, alphaA);
+      const auto v0b = interpolate(v1, v3, alphaB);
 
       m_VSOutputTriangles.push_back({ v0a, v2, v3 });
       m_VSOutputTriangles.push_back({ v0b, v0a, v3 });
@@ -238,48 +240,45 @@ void Pipeline::PrimitiveAssembly()
 
     const auto Clip2 = [&](VSOutput& v1, VSOutput& v2, VSOutput& v3)
     {
-      const float alpha0 = (-v1.position.z) / (v3.position.z - v1.position.z);// + 0.1f;
-      const float alpha1 = (-v2.position.z) / (v3.position.z - v2.position.z);// + 0.1f;
+      const float alpha0 = (v1.position.z - v1.position.w) / (v3.position.w - v1.position.w);
+      const float alpha1 = (v2.position.z - v2.position.w) / (v3.position.w - v2.position.w);
 
       v1 = interpolate(v1, v3, alpha0);
       v2 = interpolate(v2, v3, alpha1);
-
-      //v1.position.z = 0.0f;
-      //v2.position.z = 0.0f;
 
       m_VSOutputTriangles.push_back({ v1, v2, v3 });
     };
 
     // Near clipping tests
-    if (triangle.v1.position.z < 0.0f)
+    if (triangle.v1.position.z > triangle.v1.position.w)
     {
-      if (triangle.v2.position.z < 0.0f)
+      if (triangle.v2.position.z > triangle.v2.position.w)
         Clip2(triangle.v1, triangle.v2, triangle.v3);
-      else if (triangle.v3.position.z < 0.0f)
+      else if (triangle.v3.position.z > triangle.v3.position.w)
         Clip2(triangle.v1, triangle.v3, triangle.v2);
       else
         Clip1(triangle.v1, triangle.v2, triangle.v3);
     }
-    else if (triangle.v2.position.z < 0.0f)
+    else if (triangle.v2.position.z > triangle.v2.position.w)
     {
-      if (triangle.v3.position.z < 0.0f)
+      if (triangle.v3.position.z > triangle.v3.position.w)
         Clip2(triangle.v2, triangle.v3, triangle.v1);
       else
         Clip1(triangle.v2, triangle.v1, triangle.v3);
     }
-    else if (triangle.v3.position.z < 0.0f)
+    else if (triangle.v3.position.z > triangle.v3.position.w)
       Clip1(triangle.v3, triangle.v1, triangle.v2);
     else // no near clipping necessary
       m_VSOutputTriangles.push_back(triangle);
   }
 
-  // TUCNA
+  // Sort based on distance from camera
   std::sort(m_VSOutputTriangles.begin(), m_VSOutputTriangles.end(),[](const VSOutputTriangle& t1, const VSOutputTriangle& t2)
   {
     float z1 = (t1.v1.position.z + t1.v2.position.z + t1.v3.position.z) / 3.0f;
     float z2 = (t2.v1.position.z + t2.v2.position.z + t2.v3.position.z) / 3.0f;
 
-    return z2 > z1;
+    return z2 < z1;
   });
 }
 
@@ -357,7 +356,7 @@ void Pipeline::Rasterizer(VSOutputTriangle& triangle)
 
       float z = w1 * triangle.v1.position.z + w2 * triangle.v2.position.z + w3 * triangle.v3.position.z;
 
-      if (z < m_depthBuffer[y * m_buffersWidth + x])
+      if (z > m_depthBuffer[y * m_buffersWidth + x])
       //if (atomicLessAndExchange(m_depthBuffer->at(y * m_buffersWidth + x), z))
       {
         m_depthBuffer[y * m_buffersWidth + x] = z;

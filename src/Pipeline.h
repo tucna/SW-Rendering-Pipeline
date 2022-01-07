@@ -93,6 +93,8 @@ private:
   std::mutex m_mtx;
 };
 
+// Operators needed for linear interpolation
+
 inline Pipeline::VSOutput operator-(const Pipeline::VSOutput& v1, const Pipeline::VSOutput& v2)
 {
   Pipeline::VSOutput result = {};

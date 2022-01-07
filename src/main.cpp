@@ -40,7 +40,7 @@ public:
 
     m_pipeline = make_unique<Pipeline>();
 
-    string directory = "wall";
+    string directory = "backpack";
     m_modelScene = m_importer.ReadFile(ReturnObjPath(directory),
       aiProcess_PreTransformVertices |
       aiProcess_CalcTangentSpace |
@@ -52,7 +52,6 @@ public:
     );
 
     m_depthBuffer = new float[m_screenWidth * m_screenHeight];
-    //m_depthBuffer.resize(800 * 600);
     m_renderTarget = make_unique<tDX::Sprite>(m_screenWidth, m_screenHeight);
 
     m_PSTexturesSprites.resize(m_modelScene->mNumMaterials);
@@ -170,10 +169,7 @@ public:
 
     MaterialReflectance reflectance = {};
 
-    auto materials = {/*1,2,3,4,5,7,8,9,10,11,12,13,14,15,16,17,18,19,*/19,20};//{5,6, 16,20};
-
     for (size_t materialID = 0; materialID < m_modelScene->mNumMaterials; materialID++)
-    //for (size_t materialID : materials)
     {
       m_pipeline->SetIAInput(m_sortedVerticesByMaterial[materialID], m_sortedIndicesByMaterial[materialID]);
 
@@ -291,16 +287,16 @@ public:
     // Projection
     const float fovY = 45.0f;
     const float n = 0.1;
-    const float f = 5.0f;
+    const float f = 10000.0f;
     const float yScale = 1.0f / tan(toRad(fovY / 2.0f));
     const float xScale = yScale / m_aspectRatio;
 
     m_projectionMatrix =
     { {
-      {{ xScale, 0     ,  0           , 0                   }},
-      {{ 0     , yScale,  0           , 0                   }},
-      {{ 0     , 0     ,  f / (n - f) , -(f * n) / (f - n) }},
-      {{ 0     , 0     , -1           , 0                   }}
+      {{ xScale, 0     ,  0           , 0                 }},
+      {{ 0     , yScale,  0           , 0                 }},
+      {{ 0     , 0     ,  n / (f - n) , (f * n) / (f - n) }},
+      {{ 0     , 0     , -1           , 0                 }}
     } };
 
     m_mvpMatrix = m_projectionMatrix * m_viewMatrix * m_modelMatrix;
@@ -309,7 +305,7 @@ public:
   void ClearDepthBuffer()
   {
     for (size_t i = 0; i < m_screenWidth * m_screenHeight; i++)
-      m_depthBuffer[i] = std::numeric_limits<float>::infinity();
+      m_depthBuffer[i] = 0.0f;
   }
 
 private:
