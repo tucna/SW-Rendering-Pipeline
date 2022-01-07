@@ -15,7 +15,7 @@ Graphics rendering pipeline without any external graphical dependencies running 
 
 # Screenshots
 <p align="center">  
-  <img src="doc/1.jpg" width=250px> <img src="doc/2.jpg" width=250px> <img src="doc/3.jpg" width=250px> <img src="doc/4.jpg" width=250px> <img src="doc/5.jpg" width=250px> <img src="doc/6.jpg" width=250px>
+  <img src="doc/1.jpg" width=250px> <img src="doc/2.jpg" width=250px> <img src="doc/3.jpg" width=250px> <img src="doc/4.jpg" width=250px> <img src="doc/5.jpg" width=250px> <img src="doc/6.jpg" width=250px> <img src="doc/7.jpg" width=250px>
 </p>
 
 # Features
@@ -23,7 +23,7 @@ Graphics rendering pipeline without any external graphical dependencies running 
 - You can rotate a model and move a point light.
 - You can load and render `obj` file including materials.
 - Phong reflection model.
-- Phong shading.
+- Blinn/Phong shading.
 - Texture mapping.
 - Normal mapping.
 - Z-buffering.
