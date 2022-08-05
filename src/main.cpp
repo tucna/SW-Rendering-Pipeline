@@ -286,7 +286,7 @@ public:
 
     // Projection
     const float fovY = 45.0f;
-    const float n = 0.1;
+    const float n = 0.1f;
     const float f = 10000.0f;
     const float yScale = 1.0f / tan(toRad(fovY / 2.0f));
     const float xScale = yScale / m_aspectRatio;
